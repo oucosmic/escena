@@ -1,0 +1,59 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>Escena</AssemblyName>
+    <RootNamespace>Escena</RootNamespace>
+    <Version>0.6.0</Version>
+    <!-- Sense el codi del commit enganxat al número de versió -->
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <Product>Escena</Product>
+    <Description>Reproductor de cues per a teatre i espectacles</Description>
+    <ApplicationIcon>Escena.ico</ApplicationIcon>
+    <!-- VLC: només la versió de 64 bits -->
+    <VlcWindowsX86Enabled>false</VlcWindowsX86Enabled>
+    <VlcWindowsArm64Enabled>false</VlcWindowsArm64Enabled>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Del VLC només calen la biblioteca i els connectors (sense interfícies ni scripts) -->
+    <VlcWindowsX64IncludeFiles Include="libvlc.dll;libvlccore.dll;plugins\%2A%2A" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\gui\%2A%2A;plugins\lua\%2A%2A;plugins\control\%2A%2A;plugins\visualization\%2A%2A" />
+  </ItemGroup>
+
+  <!-- El VLC necessita els seus fitxers en una carpeta al costat de l'exe: no es posen dins del fitxer únic -->
+  <Target Name="KeepVlcOutsideSingleFile" AfterTargets="ComputeResolvedFilesToPublishList">
+    <ItemGroup>
+      <ResolvedFileToPublish Update="@(ResolvedFileToPublish)"
+                             Condition="$([System.String]::Copy('%(ResolvedFileToPublish.RelativePath)').StartsWith('libvlc'))"
+                             ExcludeFromSingleFile="true" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Documents que van al costat de l'exe (instruccions, llicència i avisos de tercers) -->
+  <ItemGroup>
+    <None Include="Instruccions.html" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="..\LICENSE" Link="LICENSE.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="..\THIRD-PARTY-NOTICES.md" Link="THIRD-PARTY-NOTICES.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Escena.ico" />
+    <EmbeddedResource Include="Lang\*.json" LogicalName="Escena.Lang.%(Filename).json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="LibVLCSharp" Version="3.10.2" />
+    <PackageReference Include="NAudio" Version="2.2.1" />
+    <PackageReference Include="VideoLAN.LibVLC.Windows" Version="3.0.24" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="System.IO" />
+  </ItemGroup>
+
+</Project>

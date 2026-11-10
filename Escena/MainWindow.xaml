@@ -1,0 +1,973 @@
+<Window x:Class="Escena.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:Escena"
+        xmlns:m="clr-namespace:Escena.Model"
+        xmlns:c="clr-namespace:Escena.Controls"
+        Title="{Binding Title}" Width="1360" Height="860" MinWidth="980" MinHeight="600"
+        Background="{StaticResource BgBrush}" Foreground="{StaticResource TextBrush}"
+        WindowStartupLocation="CenterScreen" Icon="/Escena.ico"
+        PreviewKeyDown="Window_PreviewKeyDown" Closing="Window_Closing">
+
+    <Window.Resources>
+        <local:NullToVisibilityConverter x:Key="NotNullToVis"/>
+        <local:NullToVisibilityConverter x:Key="NullToVis" Invert="True"/>
+        <local:InverseBoolConverter x:Key="Not"/>
+        <local:PanTextConverter x:Key="PanText"/>
+        <local:EqualityMultiConverter x:Key="IsSame"/>
+        <local:DepthIndentConverter x:Key="DepthIndent"/>
+        <local:IsGroupConverter x:Key="IsGroup"/>
+
+        <!-- ===== Encaminament d'àudio (fitxer i micròfon): sortida, matriu, enviaments i ducking ===== -->
+        <DataTemplate x:Key="RoutingPanel">
+            <StackPanel>
+                <TextBlock Text="Sortida" Style="{StaticResource FieldLabel}"/>
+                <DockPanel>
+                    <Button DockPanel.Dock="Right" Content="{Binding Routing.MatrixText}" Click="MainMatrix_Click" Padding="8,2" Margin="4,0,0,0"
+                            ToolTip="Matriu: quins canals de la cue van a quins canals de la sortida, i amb quin nivell"/>
+                    <ComboBox ItemsSource="{Binding DataContext.AudioOutputs, RelativeSource={RelativeSource AncestorType=Window}}"
+                              IsSynchronizedWithCurrentItem="False"
+                              SelectedValuePath="Id" DisplayMemberPath="Name" SelectedValue="{Binding OutputId}"/>
+                </DockPanel>
+
+                <TextBlock Text="Envia també a (monitors, efectes d'escenari…)" Style="{StaticResource FieldLabel}"/>
+                <ItemsControl ItemsSource="{Binding Routing.Sends}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition Width="56"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <ComboBox ItemsSource="{Binding DataContext.AudioOutputs, RelativeSource={RelativeSource AncestorType=Window}}"
+                                          IsSynchronizedWithCurrentItem="False"
+                                          SelectedValuePath="Id" DisplayMemberPath="Name" SelectedValue="{Binding OutputId}"/>
+                                <TextBox Grid.Column="1" Margin="4,0,0,0" ToolTip="Nivell de l'enviament (dB)"
+                                         Text="{Binding LevelDb, StringFormat={}{0:0.0}, UpdateSourceTrigger=LostFocus}"/>
+                                <Button Grid.Column="2" Content="{Binding MatrixText}" Click="SendMatrix_Click" Padding="6,0" Margin="4,0,0,0"/>
+                                <Button Grid.Column="3" Content="✕" Click="RemoveSend_Click" Padding="6,0" Margin="2,0,0,0" ToolTip="Treu l'enviament"/>
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <Button Content="+ Enviament" Click="AddSend_Click" HorizontalAlignment="Left" Padding="8,2"
+                        ToolTip="La cue sonarà també per una altra sortida, amb nivell i matriu propis"/>
+
+                <CheckBox Content="Ducking: abaixa les altres cues mentre aquesta sona" IsChecked="{Binding Routing.DuckOthers}"/>
+                <Grid IsEnabled="{Binding Routing.DuckOthers}" Margin="0,2,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
+                        <ColumnDefinition Width="10"/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock Text="Quant baixen (dB)" Style="{StaticResource FieldLabel}"/>
+                        <TextBox Text="{Binding Routing.DuckDb, StringFormat={}{0:0.0}, UpdateSourceTrigger=LostFocus}"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Text="Temps de baixada i pujada (s)" Style="{StaticResource FieldLabel}"/>
+                        <TextBox Text="{Binding Routing.DuckFade, UpdateSourceTrigger=LostFocus}"/>
+                    </StackPanel>
+                </Grid>
+            </StackPanel>
+        </DataTemplate>
+
+        <!-- ===== Propietats específiques de cada tipus ===== -->
+        <DataTemplate DataType="{x:Type m:AudioCue}">
+            <StackPanel>
+                <TextBlock Text="Fitxer d'àudio" Style="{StaticResource FieldLabel}"/>
+                <DockPanel>
+                    <Button DockPanel.Dock="Right" Content="…" Width="34" Margin="4,0,0,0" Padding="0,3"
+                            Click="BrowseFile_Click" ToolTip="Tria un fitxer"/>
+                    <TextBox Text="{Binding FilePath, UpdateSourceTrigger=LostFocus}" ToolTip="{Binding FilePath}"/>
+                </DockPanel>
+                <TextBlock Text="{Binding ErrorMessage}" Foreground="{StaticResource ErrorBrush}" TextWrapping="Wrap"
+                           Margin="0,4,0,0" Visibility="{Binding ErrorMessage, Converter={StaticResource NotNullToVis}}"/>
+
+                <c:WaveformView Height="86" Margin="0,8,0,0"
+                                FilePath="{Binding FilePath}" StartAt="{Binding StartAt}" EndAt="{Binding EndAt}"
+                                Elapsed="{Binding Elapsed}" ShowPlayhead="{Binding IsActive}" Slices="{Binding Slices}"/>
+                <DockPanel Margin="0,3,0,0">
+                    <Button DockPanel.Dock="Right" Content="🎧 Escolta" Click="Preview_Click" Padding="8,2"
+                            ToolTip="Escolta-la pels auriculars sense que ho senti el públic (E). Torna a prémer per parar."/>
+                    <TextBlock Foreground="{StaticResource MutedBrush}" FontSize="12" VerticalAlignment="Center">
+                        <Run Text="Durada a reproduir:"/> <Run Text="{Binding DurationText, Mode=OneWay}"/>
+                    </TextBlock>
+                </DockPanel>
+
+                <TextBlock Text="Bucles dins del fitxer (es repeteixen fins a «Surt del bucle»)" Style="{StaticResource FieldLabel}"/>
+                <ItemsControl ItemsSource="{Binding Slices}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition Width="6"/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition Width="6"/>
+                                    <ColumnDefinition Width="70"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox Text="{Binding Start, StringFormat={}{0:0.00}, UpdateSourceTrigger=LostFocus}" ToolTip="Inici del bucle (s)"/>
+                                <TextBox Grid.Column="2" Text="{Binding End, StringFormat={}{0:0.00}, UpdateSourceTrigger=LostFocus}" ToolTip="Final del bucle (s)"/>
+                                <TextBox Grid.Column="4" Text="{Binding Repeats, UpdateSourceTrigger=LostFocus}"
+                                         ToolTip="Repeticions extra; 0 = fins a «Surt del bucle»"/>
+                                <Button Grid.Column="5" Content="✕" Padding="6,0" Margin="4,0,0,0" Click="RemoveSlice_Click" ToolTip="Treu el bucle"/>
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <DockPanel>
+                    <Button DockPanel.Dock="Left" Content="+ Bucle" Click="AddSlice_Click" Padding="8,2"
+                            ToolTip="Afegeix un tros que es repeteix (inici, final, repeticions)"/>
+                    <TextBlock Foreground="{StaticResource MutedBrush}" FontSize="11" TextWrapping="Wrap" VerticalAlignment="Center" Margin="6,0,0,0"
+                               Text="Inici · final (s) · repeticions (0 = fins a «Surt del bucle»)"/>
+                </DockPanel>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
+                        <ColumnDefinition Width="10"/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock Text="Inici (s)" Style="{StaticResource FieldLabel}"/>
+                        <TextBox Text="{Binding StartAt, StringFormat={}{0:0.00}, UpdateSourceTrigger=LostFocus}"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Text="Final (s) — 0 = fins al final" Style="{StaticResource FieldLabel}"/>
+                        <TextBox Text="{Binding EndAt, StringFormat={}{0:0.00}, UpdateSourceTrigger=LostFocus}"/>
+                    </StackPanel>
+                </Grid>
+
+                <TextBlock Text="Volum (dB) — −60 és silenci" Style="{StaticResource FieldLabel}"/>
+                <DockPanel>
+                    <TextBox DockPanel.Dock="Right" Width="60" Margin="6,0,0,0"
+                             Text="{Binding VolumeDb, StringFormat={}{0:0.0}, UpdateSourceTrigger=LostFocus}"/>
+                    <Slider Minimum="-60" Maximum="12" Value="{Binding VolumeDb}" VerticalAlignment="Center"
+                            SmallChange="0.5" LargeChange="3"/>
+                </DockPanel>
+
+                <TextBlock Text="Panorama" Style="{StaticResource FieldLabel}"/>
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Right" Width="60" Margin="6,0,0,0" VerticalAlignment="Center"
+                               Text="{Binding Pan, Converter={StaticResource PanText}}"/>
+                    <Slider Minimum="-1" Maximum="1" Value="{Binding Pan}" VerticalAlignment="Center"
+                            SmallChange="0.05" LargeChange="0.25" TickFrequency="0.25" IsSnapToTickEnabled="False"
+                            ToolTip="Doble clic: centre" MouseDoubleClick="PanSlider_DoubleClick"/>
+                </DockPanel>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
+                        <ColumnDefinition Width="10"/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock Text="Fosa d'entrada (s)" Style="{StaticResource FieldLabel}"/>
+                        <TextBox Text="{Binding FadeIn, UpdateSourceTrigger=LostFocus}"/>
+                        <ComboBox Margin="0,4,0,0" ItemsSource="{x:Static local:Options.FadeCurves}"
+                                  SelectedValuePath="Value" DisplayMemberPath="Label" SelectedValue="{Binding FadeInCurve}"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Text="Fosa de sortida (s)" Style="{StaticResource FieldLabel}"/>
+                        <TextBox Text="{Binding FadeOut, UpdateSourceTrigger=LostFocus}"/>
+                        <ComboBox Margin="0,4,0,0" ItemsSource="{x:Static local:Options.FadeCurves}"
+                                  SelectedValuePath="Value" DisplayMemberPath="Label" SelectedValue="{Binding FadeOutCurve}"/>
+                    </StackPanel>
+                </Grid>
+                <CheckBox Content="Bucle (repeteix fins que s'aturi)" IsChecked="{Binding Loop}"/>
+                <ContentControl Content="{Binding}" ContentTemplate="{StaticResource RoutingPanel}" Focusable="False"/>
+            </StackPanel>
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type m:MicCue}">
+            <StackPanel>
+                <TextBlock Text="Entrada (micròfon o línia)" Style="{StaticResource FieldLabel}"/>
+                <ComboBox ItemsSource="{Binding DataContext.InputDevices, RelativeSource={RelativeSource AncestorType=Window}}"
+                          SelectedValuePath="Id" DisplayMemberPath="Name" SelectedValue="{Binding InputDeviceId}"/>
+                <TextBlock Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" Margin="0,6,0,0" FontSize="12"
+                           Text="Sona fins que l'aturis, amb foses com qualsevol cue. Compte amb l'acoblament si el micròfon és a prop dels altaveus."/>
+
+                <TextBlock Text="Volum (dB) — −60 és silenci" Style="{StaticResource FieldLabel}"/>
+                <DockPanel>
+                    <TextBox DockPanel.Dock="Right" Width="60" Margin="6,0,0,0"
+                             Text="{Binding VolumeDb, StringFormat={}{0:0.0}, UpdateSourceTrigger=LostFocus}"/>
+                    <Slider Minimum="-60" Maximum="24" Value="{Binding VolumeDb}" VerticalAlignment="Center" SmallChange="0.5" LargeChange="3"/>
+                </DockPanel>
+
+                <TextBlock Text="Panorama" Style="{StaticResource FieldLabel}"/>
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Right" Width="60" Margin="6,0,0,0" VerticalAlignment="Center"
+                               Text="{Binding Pan, Converter={StaticResource PanText}}"/>
+                    <Slider Minimum="-1" Maximum="1" Value="{Binding Pan}" VerticalAlignment="Center"
+                            SmallChange="0.05" LargeChange="0.25" ToolTip="Doble clic: centre" MouseDoubleClick="PanSlider_DoubleClick"/>
+                </DockPanel>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
+                        <ColumnDefinition Width="10"/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock Text="Fosa d'entrada (s)" Style="{StaticResource FieldLabel}"/>
+                        <TextBox Text="{Binding FadeIn, UpdateSourceTrigger=LostFocus}"/>
+                        <ComboBox Margin="0,4,0,0" ItemsSource="{x:Static local:Options.FadeCurves}"
+                                  SelectedValuePath="Value" DisplayMemberPath="Label" SelectedValue="{Binding FadeInCurve}"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Text="Fosa de sortida (s)" Style="{StaticResource FieldLabel}"/>
+                        <TextBox Text="{Binding FadeOut, UpdateSourceTrigger=LostFocus}"/>
+                        <ComboBox Margin="0,4,0,0" ItemsSource="{x:Static local:Options.FadeCurves}"
+                                  SelectedValuePath="Value" DisplayMemberPath="Label" SelectedValue="{Binding FadeOutCurve}"/>
+                    </StackPanel>
+                </Grid>
+                <ContentControl Content="{Binding}" ContentTemplate="{StaticResource RoutingPanel}" Focusable="False"/>
+            </StackPanel>
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type m:TextCue}">
+            <StackPanel>
+                <TextBlock Text="Text (Retorn fa una línia nova)" Style="{StaticResource FieldLabel}"/>
+                <TextBox Text="{Binding Text, UpdateSourceTrigger=LostFocus}" AcceptsReturn="True" TextWrapping="Wrap"
+                         MinHeight="70" VerticalScrollBarVisibility="Auto"/>
+
+                <TextBlock Text="Pantalla" Style="{StaticResource FieldLabel}"/>
+                <ComboBox ItemsSource="{Binding DataContext.VideoOutputs, RelativeSource={RelativeSource AncestorType=Window}}"
+                          IsSynchronizedWithCurrentItem="False"
+                          SelectedValuePath="Id" DisplayMemberPath="Name" SelectedValue="{Binding OutputId}"/>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
+                        <ColumnDefinition Width="10"/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock Text="Mida de la lletra" Style="{StaticResource FieldLabel}"/>
+                        <TextBox Text="{Binding FontSize, UpdateSourceTrigger=LostFocus}"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Text="Color (#RRGGBB)" Style="{StaticResource FieldLabel}"/>
+                        <TextBox Text="{Binding Color, UpdateSourceTrigger=LostFocus}"/>
+                    </StackPanel>
+                </Grid>
+
+                <TextBlock Text="Posició" Style="{StaticResource FieldLabel}"/>
+                <ComboBox ItemsSource="{x:Static local:Options.TextPlacements}"
+                          SelectedValuePath="Value" DisplayMemberPath="Label" SelectedValue="{Binding Placement}"/>
+
+                <TextBlock Text="Franja fosca darrere el text" Style="{StaticResource FieldLabel}"/>
+                <Slider Minimum="0" Maximum="1" Value="{Binding BackgroundOpacity}" SmallChange="0.05" LargeChange="0.25"/>
+
+                <TextBlock Text="Temps en pantalla (s) — 0 = fins que s'aturi" Style="{StaticResource FieldLabel}"/>
+                <TextBox Text="{Binding DisplayTime, UpdateSourceTrigger=LostFocus}"/>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
+                        <ColumnDefinition Width="10"/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock Text="Fosa d'entrada (s)" Style="{StaticResource FieldLabel}"/>
+                        <TextBox Text="{Binding FadeIn, UpdateSourceTrigger=LostFocus}"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Text="Fosa de sortida (s)" Style="{StaticResource FieldLabel}"/>
+                        <TextBox Text="{Binding FadeOut, UpdateSourceTrigger=LostFocus}"/>
+                    </StackPanel>
+                </Grid>
+                <CheckBox Content="Treu els altres textos d'aquesta pantalla (sobretítols)" IsChecked="{Binding ReplaceTexts}"/>
+            </StackPanel>
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type m:VideoCue}">
+            <StackPanel>
+                <TextBlock Text="Fitxer de vídeo" Style="{StaticResource FieldLabel}"/>
+                <DockPanel>
+                    <Button DockPanel.Dock="Right" Content="…" Width="34" Margin="4,0,0,0" Padding="0,3"
+                            Click="BrowseFile_Click" ToolTip="Tria un fitxer"/>
+                    <TextBox Text="{Binding FilePath, UpdateSourceTrigger=LostFocus}" ToolTip="{Binding FilePath}"/>
+                </DockPanel>
+                <TextBlock Text="{Binding ErrorMessage}" Foreground="{StaticResource ErrorBrush}" TextWrapping="Wrap"
+                           Margin="0,4,0,0" Visibility="{Binding ErrorMessage, Converter={StaticResource NotNullToVis}}"/>
+                <TextBlock Margin="0,4,0,0" Foreground="{StaticResource MutedBrush}" FontSize="12">
+                    <Run Text="Durada a reproduir:"/> <Run Text="{Binding DurationText, Mode=OneWay}"/>
+                </TextBlock>
+
+                <TextBlock Text="Pantalla" Style="{StaticResource FieldLabel}"/>
+                <ComboBox ItemsSource="{Binding DataContext.VideoOutputs, RelativeSource={RelativeSource AncestorType=Window}}"
+                          IsSynchronizedWithCurrentItem="False"
+                          SelectedValuePath="Id" DisplayMemberPath="Name" SelectedValue="{Binding OutputId}"/>
+
+                <TextBlock Text="So del vídeo per" Style="{StaticResource FieldLabel}"/>
+                <ComboBox ItemsSource="{Binding DataContext.VideoAudioChoices, RelativeSource={RelativeSource AncestorType=Window}}"
+                          IsSynchronizedWithCurrentItem="False"
+                          SelectedValuePath="Id" DisplayMemberPath="Name" SelectedValue="{Binding AudioOutputChoice}"
+                          ToolTip="Per quina sortida d'àudio surt el so del vídeo (les sortides es configuren al botó 🔊)"/>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
+                        <ColumnDefinition Width="10"/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock Text="Inici (s)" Style="{StaticResource FieldLabel}"/>
+                        <TextBox Text="{Binding StartAt, StringFormat={}{0:0.00}, UpdateSourceTrigger=LostFocus}"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Text="Final (s) — 0 = fins al final" Style="{StaticResource FieldLabel}"/>
+                        <TextBox Text="{Binding EndAt, StringFormat={}{0:0.00}, UpdateSourceTrigger=LostFocus}"/>
+                    </StackPanel>
+                </Grid>
+
+                <TextBlock Text="Volum del so (dB) — −60 és silenci" Style="{StaticResource FieldLabel}"/>
+                <DockPanel>
+                    <TextBox DockPanel.Dock="Right" Width="60" Margin="6,0,0,0"
+                             Text="{Binding VolumeDb, StringFormat={}{0:0.0}, UpdateSourceTrigger=LostFocus}"/>
+                    <Slider Minimum="-60" Maximum="6" Value="{Binding VolumeDb}" VerticalAlignment="Center"
+                            SmallChange="0.5" LargeChange="3"/>
+                </DockPanel>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
+                        <ColumnDefinition Width="10"/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock Text="Fosa des de negre (s)" Style="{StaticResource FieldLabel}"/>
+                        <TextBox Text="{Binding FadeIn, UpdateSourceTrigger=LostFocus}"/>
+                        <ComboBox Margin="0,4,0,0" ItemsSource="{x:Static local:Options.FadeCurves}"
+                                  SelectedValuePath="Value" DisplayMemberPath="Label" SelectedValue="{Binding FadeInCurve}"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Text="Fosa a negre en aturar (s)" Style="{StaticResource FieldLabel}"/>
+                        <TextBox Text="{Binding FadeOut, UpdateSourceTrigger=LostFocus}"/>
+                        <ComboBox Margin="0,4,0,0" ItemsSource="{x:Static local:Options.FadeCurves}"
+                                  SelectedValuePath="Value" DisplayMemberPath="Label" SelectedValue="{Binding FadeOutCurve}"/>
+                    </StackPanel>
+                </Grid>
+                <CheckBox Content="Bucle (repeteix fins que s'aturi)" IsChecked="{Binding Loop}"/>
+                <TextBlock Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" Margin="0,8,0,0" FontSize="12"
+                           Text="En acabar, la pantalla torna a negre. Les foses afecten la imatge i el so alhora."/>
+            </StackPanel>
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type m:ImageCue}">
+            <StackPanel>
+                <TextBlock Text="Fitxer d'imatge" Style="{StaticResource FieldLabel}"/>
+                <DockPanel>
+                    <Button DockPanel.Dock="Right" Content="…" Width="34" Margin="4,0,0,0" Padding="0,3"
+                            Click="BrowseFile_Click" ToolTip="Tria un fitxer"/>
+                    <TextBox Text="{Binding FilePath, UpdateSourceTrigger=LostFocus}" ToolTip="{Binding FilePath}"/>
+                </DockPanel>
+                <TextBlock Text="{Binding ErrorMessage}" Foreground="{StaticResource ErrorBrush}" TextWrapping="Wrap"
+                           Margin="0,4,0,0" Visibility="{Binding ErrorMessage, Converter={StaticResource NotNullToVis}}"/>
+                <Border Margin="0,8,0,0" Background="Black" Height="120" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                    <Image Source="{Binding FilePath, TargetNullValue={x:Null}, FallbackValue={x:Null}}" Stretch="Uniform"/>
+                </Border>
+
+                <TextBlock Text="Pantalla" Style="{StaticResource FieldLabel}"/>
+                <ComboBox ItemsSource="{Binding DataContext.VideoOutputs, RelativeSource={RelativeSource AncestorType=Window}}"
+                          IsSynchronizedWithCurrentItem="False"
+                          SelectedValuePath="Id" DisplayMemberPath="Name" SelectedValue="{Binding OutputId}"/>
+
+                <TextBlock Text="Temps en pantalla (s) — 0 = fins que s'aturi" Style="{StaticResource FieldLabel}"/>
+                <TextBox Text="{Binding DisplayTime, UpdateSourceTrigger=LostFocus}"/>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
+                        <ColumnDefinition Width="10"/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock Text="Fosa des de negre (s)" Style="{StaticResource FieldLabel}"/>
+                        <TextBox Text="{Binding FadeIn, UpdateSourceTrigger=LostFocus}"/>
+                        <ComboBox Margin="0,4,0,0" ItemsSource="{x:Static local:Options.FadeCurves}"
+                                  SelectedValuePath="Value" DisplayMemberPath="Label" SelectedValue="{Binding FadeInCurve}"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Text="Fosa a negre (s)" Style="{StaticResource FieldLabel}"/>
+                        <TextBox Text="{Binding FadeOut, UpdateSourceTrigger=LostFocus}"/>
+                        <ComboBox Margin="0,4,0,0" ItemsSource="{x:Static local:Options.FadeCurves}"
+                                  SelectedValuePath="Value" DisplayMemberPath="Label" SelectedValue="{Binding FadeOutCurve}"/>
+                    </StackPanel>
+                </Grid>
+                <TextBlock Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" Margin="0,8,0,0" FontSize="12"
+                           Text="Amb temps fix, la fosa a negre acaba just quan s'acaba el temps. Si en poses una altra a sobre, es veu la de dalt (encadenat)."/>
+            </StackPanel>
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type m:FadeCue}">
+            <StackPanel>
+                <TextBlock Text="Cue destí" Style="{StaticResource FieldLabel}"/>
+                <ComboBox ItemsSource="{Binding DataContext.Cues, RelativeSource={RelativeSource AncestorType=Window}}"
+                          SelectedValuePath="Id" DisplayMemberPath="DisplayName" SelectedValue="{Binding TargetId}"/>
+
+                <CheckBox Content="Volum" IsChecked="{Binding FadeVolume}" FontWeight="SemiBold" Margin="0,12,0,0"/>
+                <DockPanel IsEnabled="{Binding FadeVolume}" Margin="0,4,0,0">
+                    <TextBox DockPanel.Dock="Right" Width="60" Margin="6,0,0,0"
+                             Text="{Binding TargetVolumeDb, StringFormat={}{0:0.0}, UpdateSourceTrigger=LostFocus}"
+                             ToolTip="Volum final (dB); −60 és silenci"/>
+                    <Slider Minimum="-60" Maximum="12" Value="{Binding TargetVolumeDb}" VerticalAlignment="Center"/>
+                </DockPanel>
+
+                <CheckBox Content="Panorama" IsChecked="{Binding FadePan}" FontWeight="SemiBold" Margin="0,12,0,0"/>
+                <DockPanel IsEnabled="{Binding FadePan}" Margin="0,4,0,0">
+                    <TextBlock DockPanel.Dock="Right" Width="60" Margin="6,0,0,0" VerticalAlignment="Center"
+                               Text="{Binding TargetPan, Converter={StaticResource PanText}}"/>
+                    <Slider Minimum="-1" Maximum="1" Value="{Binding TargetPan}" VerticalAlignment="Center"
+                            SmallChange="0.05" LargeChange="0.25" ToolTip="Panorama final"/>
+                </DockPanel>
+                <TextBlock Text="Durada de la fosa (s)" Style="{StaticResource FieldLabel}"/>
+                <TextBox Text="{Binding FadeTime, UpdateSourceTrigger=LostFocus}"/>
+                <TextBlock Text="Corba" Style="{StaticResource FieldLabel}"/>
+                <ComboBox ItemsSource="{x:Static local:Options.FadeCurves}"
+                          SelectedValuePath="Value" DisplayMemberPath="Label" SelectedValue="{Binding Curve}"/>
+                <CheckBox Content="Atura la cue destí en acabar la fosa" IsChecked="{Binding StopTarget}"/>
+                <CheckBox Content="En vídeos i imatges, enfosqueix també la imatge" IsChecked="{Binding AffectsPicture}"/>
+            </StackPanel>
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type m:ControlCue}">
+            <StackPanel>
+                <TextBlock Text="Acció" Style="{StaticResource FieldLabel}"/>
+                <ComboBox ItemsSource="{x:Static local:Options.ControlActions}"
+                          SelectedValuePath="Value" DisplayMemberPath="Label" SelectedValue="{Binding Action}"/>
+                <TextBlock Text="Cue destí (tria'n una per actuar només sobre aquella)" Style="{StaticResource FieldLabel}"/>
+                <ComboBox ItemsSource="{Binding DataContext.Cues, RelativeSource={RelativeSource AncestorType=Window}}"
+                          SelectedValuePath="Id" DisplayMemberPath="DisplayName" SelectedValue="{Binding TargetId}"
+                          DropDownClosed="ControlTarget_DropDownClosed"/>
+                <CheckBox Content="Totes les cues en marxa (no només la destí)" IsChecked="{Binding AllCues}"
+                          Click="ControlAll_Click"/>
+                <TextBlock Foreground="#F0B429" TextWrapping="Wrap" Margin="0,6,0,0" FontSize="12"
+                           Visibility="{Binding HasIgnoredTarget, Converter={StaticResource BoolToVis}}"
+                           Text="⚠ Amb «Totes les cues» marcat, actua sobre totes, no només sobre la destí. Desmarca-ho per actuar només sobre la cue destí."/>
+                <StackPanel x:Name="StopOptions">
+                    <CheckBox Content="Amb la fosa de sortida de cada cue" IsChecked="{Binding UseOwnFade}"/>
+                    <TextBlock Text="Fosa (s) — 0 = tall immediat" Style="{StaticResource FieldLabel}"/>
+                    <TextBox Text="{Binding FadeTime, UpdateSourceTrigger=LostFocus}"
+                             IsEnabled="{Binding UseOwnFade, Converter={StaticResource Not}}"/>
+                </StackPanel>
+            </StackPanel>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding Action}" Value="Pause">
+                    <Setter TargetName="StopOptions" Property="Visibility" Value="Collapsed"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Action}" Value="Resume">
+                    <Setter TargetName="StopOptions" Property="Visibility" Value="Collapsed"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Action}" Value="Devamp">
+                    <Setter TargetName="StopOptions" Property="Visibility" Value="Collapsed"/>
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type m:WaitCue}">
+            <StackPanel>
+                <TextBlock Text="Temps d'espera (s)" Style="{StaticResource FieldLabel}"/>
+                <TextBox Text="{Binding WaitTime, UpdateSourceTrigger=LostFocus}"/>
+                <TextBlock Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" Margin="0,6,0,0" FontSize="12"
+                           Text="Útil amb «Segueix» per posar pauses dins d'una seqüència automàtica."/>
+            </StackPanel>
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type m:GroupCue}">
+            <StackPanel>
+                <TextBlock Text="Mode" Style="{StaticResource FieldLabel}"/>
+                <ComboBox ItemsSource="{x:Static local:Options.GroupModes}"
+                          SelectedValuePath="Value" DisplayMemberPath="Label" SelectedValue="{Binding Mode}"/>
+                <TextBlock Text="{Binding ModeHint}" Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" Margin="0,6,0,0" FontSize="12"/>
+                <StackPanel Visibility="{Binding IsPlaylist, Converter={StaticResource BoolToVis}}">
+                    <CheckBox Content="Barreja l'ordre cada vegada" IsChecked="{Binding Shuffle}"/>
+                    <CheckBox Content="En acabar, torna a començar (fins que s'aturi el grup)" IsChecked="{Binding LoopPlaylist}"/>
+                </StackPanel>
+
+                <TextBlock Text="Cues que conté" Style="{StaticResource FieldLabel}"/>
+                <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Background="{StaticResource InputBrush}"
+                        MaxHeight="220" Padding="8,4">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
+                        <ItemsControl ItemsSource="{Binding DataContext.GroupMembers, RelativeSource={RelativeSource AncestorType=Window}}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <DockPanel Margin="0,2">
+                                        <TextBlock DockPanel.Dock="Right" Foreground="{StaticResource MutedBrush}" FontSize="12"
+                                                   Text="{Binding PreWait, StringFormat=pre {0:0.0#} s}" ToolTip="Pre-espera: a la línia de temps, és el moment en què comença"/>
+                                        <TextBlock>
+                                            <Run Text="{Binding DisplayName, Mode=OneWay}"/>
+                                            <Run Text="{Binding TypeName, Mode=OneWay}" Foreground="{StaticResource MutedBrush}"/>
+                                        </TextBlock>
+                                    </DockPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Border>
+                <TextBlock Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" Margin="0,6,0,0" FontSize="12"
+                           Text="Per posar cues dins del grup, arrossega-les damunt del grup a la llista (o selecciona'n unes quantes i prem «+ Grup»). Aturar el grup atura tot el que conté."/>
+                <Button Content="Desagrupa (deixa les cues a la llista)" Click="Ungroup_Click" HorizontalAlignment="Left" Margin="0,8,0,0" Padding="8,2"/>
+            </StackPanel>
+        </DataTemplate>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Barra d'eines -->
+        <Border Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1" Padding="6,4">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Content="☰ Llista" Click="ListLayout_Click" ToolTip="Vista de llista (F5)"/>
+                    <Button Content="▦ Botonera" Click="CartLayout_Click" ToolTip="Vista de botonera (F6)"/>
+                    <Rectangle Width="1" Fill="{StaticResource BorderBrush}" Margin="8,4"/>
+                    <Button Content="✓ Comprova" Click="Check_Click" ToolTip="Comprovació abans de la funció: fitxers, sortides, cues buides, encadenaments"/>
+                    <Button Content="Eines ▾" Click="Tools_Click">
+                        <Button.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="Comença des de… (assaig)" Click="StartFrom_Click"/>
+                                <MenuItem Header="Registre d'assaig" Click="Log_Click"/>
+                                <MenuItem Header="Vista de regidor" Click="Stage_Click"/>
+                                <Separator/>
+                                <MenuItem Header="Empaqueta l'espectacle (copia tots els fitxers)…" Click="Pack_Click"/>
+                                <MenuItem Header="Importa sobretítols d'un fitxer de text…" Click="ImportSurtitles_Click"/>
+                                <Separator/>
+                                <MenuItem Header="Exporta al QLab (Mac)…" Click="ExportQLab_Click"/>
+                            </ContextMenu>
+                        </Button.ContextMenu>
+                    </Button>
+                    <Button Content="⚙ Ajustos" Click="Settings_Click" ToolTip="Protecció de doble GO, pànic, còpia de seguretat, escolta, idioma"/>
+                    <Button Click="Outputs_Click" ToolTip="Configura les sortides d'àudio" MaxWidth="320">
+                        <TextBlock TextTrimming="CharacterEllipsis">
+                            <Run Text="🔊"/> <Run Text="{Binding OutputSummary, Mode=OneWay}"/>
+                        </TextBlock>
+                    </Button>
+                </StackPanel>
+                <WrapPanel>
+                    <Button Content="Nou" Click="New_Click" ToolTip="Ctrl+N"/>
+                    <Button Content="Obre…" Click="Open_Click" ToolTip="Ctrl+O"/>
+                    <Button Content="Desa" Click="Save_Click" ToolTip="Ctrl+S"/>
+                    <Button Content="Desa com…" Click="SaveAs_Click" ToolTip="Ctrl+Maj+S"/>
+                    <Rectangle Width="1" Fill="{StaticResource BorderBrush}" Margin="8,4"/>
+                    <Button Content="+ Àudio" Click="AddAudio_Click" ToolTip="També pots arrossegar fitxers a la llista"/>
+                    <Button Content="+ Vídeo" Click="AddVideo_Click"/>
+                    <Button Content="+ Imatge" Click="AddImage_Click"/>
+                    <Button Content="+ Text" Click="AddText_Click" ToolTip="Títols, rètols i sobretítols a la pantalla"/>
+                    <Button Content="+ Micròfon" Click="AddMic_Click" ToolTip="Entrada en directe (micròfon o línia)"/>
+                    <Button Content="+ Fosa" Click="AddFade_Click"/>
+                    <Button Content="+ Atura/Pausa" Click="AddControl_Click"/>
+                    <Button Content="+ Espera" Click="AddWait_Click"/>
+                    <Button Content="+ Grup" Click="AddGroup_Click"/>
+                    <Rectangle Width="1" Fill="{StaticResource BorderBrush}" Margin="8,4"/>
+                    <Button Content="▲" Click="MoveUp_Click" ToolTip="Puja la cue (Ctrl+↑)"/>
+                    <Button Content="▼" Click="MoveDown_Click" ToolTip="Baixa la cue (Ctrl+↓)"/>
+                    <Button Content="Elimina" Click="Delete_Click" ToolTip="Supr"/>
+                </WrapPanel>
+            </DockPanel>
+        </Border>
+
+        <!-- GO i controls en directe -->
+        <Grid Grid.Row="1" Margin="10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Button Style="{StaticResource GoButton}" Content="GO" Click="Go_Click" ToolTip="Espai"/>
+            <StackPanel Grid.Column="1" Margin="18,0" VerticalAlignment="Center">
+                <TextBlock Text="EN ESPERA (GO)" Style="{StaticResource SectionHeader}"/>
+                <TextBlock Text="{Binding StandbyCue.DisplayName, FallbackValue='— final de la llista —'}"
+                           FontSize="26" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Foreground="#7BE495"/>
+                <TextBlock Text="{Binding StandbyCue.Notes}" Foreground="{StaticResource MutedBrush}"
+                           TextWrapping="Wrap" MaxHeight="40" TextTrimming="CharacterEllipsis"/>
+            </StackPanel>
+            <StackPanel Grid.Column="2" Width="190" Margin="0,0,14,0" VerticalAlignment="Center">
+                <TextBlock Text="VOLUM GENERAL" Style="{StaticResource SectionHeader}"/>
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Right" Width="56" TextAlignment="Right" VerticalAlignment="Center"
+                               Text="{Binding MasterVolumeDb, StringFormat={}{0:0.0} dB}"/>
+                    <Slider Minimum="-60" Maximum="6" Value="{Binding MasterVolumeDb}" VerticalAlignment="Center"
+                            SmallChange="0.5" LargeChange="3" Focusable="False"
+                            ToolTip="Doble clic: 0 dB" MouseDoubleClick="MasterSlider_DoubleClick"/>
+                </DockPanel>
+            </StackPanel>
+            <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
+                <Button Content="{Binding PauseLabel}" Click="Pause_Click" Width="110" Height="70" FontSize="16" ToolTip="P"/>
+                <Button Style="{StaticResource StopButton}" Content="■  ATURA-HO TOT" Click="StopAll_Click"
+                        ToolTip="Esc — amb la fosa de cada cue; torna a prémer per tallar de cop"/>
+                <Button Style="{StaticResource StopButton}" Content="PÀNIC" Click="Panic_Click" Background="#6E1A12"
+                        ToolTip="Maj+Esc — fosa ràpida de tot (durada a ⚙ Ajustos); dues vegades = tall"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- Llista o botonera + propietats -->
+        <Grid Grid.Row="2" Margin="10,0,10,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="6"/>
+                <ColumnDefinition Width="370" MinWidth="280"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Vista de llista -->
+            <DataGrid x:Name="CueGrid" ItemsSource="{Binding VisibleCues}" SelectedItem="{Binding SelectedCue, Mode=TwoWay}"
+                      Visibility="{Binding IsListLayout, Converter={StaticResource BoolToVis}}"
+                      AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Extended" SelectionUnit="FullRow"
+                      CanUserSortColumns="False" CanUserReorderColumns="False" CanUserResizeRows="False"
+                      AllowDrop="True" DragOver="Cues_DragOver" Drop="Cues_Drop" DragLeave="Cues_DragLeave"
+                      PreviewMouseLeftButtonDown="CueGrid_PreviewMouseDown" PreviewMouseMove="CueGrid_PreviewMouseMove"
+                      MouseDoubleClick="CueGrid_DoubleClick" SelectionChanged="CueGrid_SelectionChanged">
+                <DataGrid.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="Copia" InputGestureText="Ctrl+C" Click="CopyCues_Click"/>
+                        <MenuItem Header="Retalla" InputGestureText="Ctrl+X" Click="CutCues_Click"/>
+                        <MenuItem Header="Enganxa" InputGestureText="Ctrl+V" Click="PasteCues_Click"/>
+                        <MenuItem Header="Duplica" InputGestureText="Ctrl+D" Click="DuplicateCues_Click"/>
+                        <Separator/>
+                        <MenuItem Header="Agrupa" InputGestureText="Ctrl+G" Click="AddGroup_Click"/>
+                        <MenuItem Header="Elimina" InputGestureText="Supr" Click="Delete_Click"/>
+                    </ContextMenu>
+                </DataGrid.ContextMenu>
+                <DataGrid.RowStyle>
+                    <Style TargetType="DataGridRow">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Converter={StaticResource IsGroup}}" Value="True">
+                                <Setter Property="Background" Value="#2A2E38"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsStandby}" Value="True">
+                                <Setter Property="Background" Value="#1B3A26"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding State}" Value="PreWait">
+                                <Setter Property="Background" Value="#5C4B12"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding State}" Value="Running">
+                                <Setter Property="Background" Value="#1E5631"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding State}" Value="Stopping">
+                                <Setter Property="Background" Value="#6B4214"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding State}" Value="Error">
+                                <Setter Property="Background" Value="#6B1E1E"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsPaused}" Value="True">
+                                <Setter Property="Background" Value="#3E4A5C"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </DataGrid.RowStyle>
+                <DataGrid.Columns>
+                    <DataGridTemplateColumn Width="26">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="▶" Foreground="#4CC26F" FontWeight="Bold" ToolTip="En espera: la dispara el proper GO"
+                                           Visibility="{Binding IsStandby, Converter={StaticResource BoolToVis}}"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTextColumn Header="#" Binding="{Binding Number}" Width="50"/>
+                    <DataGridTemplateColumn Header="Nom" Width="*" MinWidth="200">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" Margin="{Binding Depth, Converter={StaticResource DepthIndent}}">
+                                    <!-- Triangle per plegar/desplegar un grup (com al QLab) -->
+                                    <TextBlock x:Name="Toggle" Width="16" Text="▾" Foreground="{StaticResource MutedBrush}" Cursor="Hand"
+                                               ToolTip="Plega / desplega el grup" MouseLeftButtonDown="GroupToggle_MouseDown" Visibility="Hidden"/>
+                                    <TextBlock Text="⚠ " Foreground="{StaticResource ErrorBrush}" ToolTip="{Binding ErrorMessage}"
+                                               Visibility="{Binding ErrorMessage, Converter={StaticResource NotNullToVis}}"/>
+                                    <TextBlock x:Name="CueName" Text="{Binding Name}" TextTrimming="CharacterEllipsis"/>
+                                </StackPanel>
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding Converter={StaticResource IsGroup}}" Value="True">
+                                        <Setter TargetName="Toggle" Property="Visibility" Value="Visible"/>
+                                        <Setter TargetName="CueName" Property="FontWeight" Value="Bold"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding IsCollapsed}" Value="True">
+                                        <Setter TargetName="Toggle" Property="Text" Value="▸"/>
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTextColumn Header="Tipus" Binding="{Binding TypeName}" Width="115"/>
+                    <DataGridTextColumn Header="Pre" Binding="{Binding PreWait, StringFormat={}{0:0.0;-0.0;#}}" Width="48"/>
+                    <DataGridTextColumn Header="Durada" Binding="{Binding DurationText}" Width="68"/>
+                    <DataGridTextColumn Header="Post" Binding="{Binding PostWait, StringFormat={}{0:0.0;-0.0;#}}" Width="48"/>
+                    <DataGridTextColumn Header="Després" Binding="{Binding NextActionText}" Width="66"/>
+                    <DataGridTextColumn Header="Tecla" Binding="{Binding Hotkey}" Width="56"/>
+                    <DataGridTextColumn Header="Notes" Binding="{Binding Notes}" Width="150">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+                                <Setter Property="Foreground" Value="#B8BDC6"/>
+                                <Setter Property="FontSize" Value="12"/>
+                                <Setter Property="ToolTip" Value="{Binding Notes}"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTemplateColumn Header="Estat" Width="200">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding StatusText}" FontSize="12"/>
+                                    <ProgressBar Value="{Binding Progress, Mode=OneWay}" Maximum="100" Margin="0,2,0,0"
+                                                 Visibility="{Binding IsActive, Converter={StaticResource BoolToVis}}"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <!-- Vista de botonera -->
+            <Border Visibility="{Binding IsCartLayout, Converter={StaticResource BoolToVis}}"
+                    Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                    AllowDrop="True" DragOver="Cues_DragOver" Drop="Cues_Drop" DragLeave="Cues_DragLeave">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
+                    <ItemsControl ItemsSource="{Binding VisibleCues}" Margin="6" Focusable="False">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border x:Name="Tile" Width="176" Height="112" Margin="5" CornerRadius="6"
+                                        Background="#2C2F35" BorderBrush="#454952" BorderThickness="2" Padding="10,8"
+                                        Cursor="Hand" ToolTip="Clic: dispara / atura · Clic dret: selecciona per editar · Arrossega: reordena"
+                                        MouseLeftButtonDown="Tile_MouseDown" MouseMove="Tile_MouseMove"
+                                        MouseLeftButtonUp="Tile_LeftClick" MouseRightButtonUp="Tile_RightClick">
+                                    <DockPanel>
+                                        <DockPanel DockPanel.Dock="Top">
+                                            <TextBlock DockPanel.Dock="Right" Text="{Binding TypeName}" FontSize="11"
+                                                       Foreground="{StaticResource MutedBrush}"/>
+                                            <TextBlock DockPanel.Dock="Right" Text="{Binding Hotkey}" FontSize="11" FontWeight="Bold"
+                                                       Foreground="#F0B429" Margin="0,0,6,0"/>
+                                            <TextBlock Text="▶ " Foreground="#4CC26F" FontWeight="Bold"
+                                                       Visibility="{Binding IsStandby, Converter={StaticResource BoolToVis}}"/>
+                                            <TextBlock Text="↳ " Foreground="{StaticResource MutedBrush}" ToolTip="És dins d'un grup"
+                                                       Visibility="{Binding HasParent, Converter={StaticResource BoolToVis}}"/>
+                                            <TextBlock Text="{Binding Number}" FontWeight="Bold" Foreground="{StaticResource MutedBrush}"/>
+                                        </DockPanel>
+                                        <StackPanel DockPanel.Dock="Bottom">
+                                            <TextBlock Text="{Binding StatusText}" FontSize="11" FontFamily="Consolas"/>
+                                            <ProgressBar Value="{Binding Progress, Mode=OneWay}" Maximum="100" Margin="0,3,0,0"
+                                                         Visibility="{Binding IsActive, Converter={StaticResource BoolToVis}}"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <TextBlock Text="⚠ " Foreground="{StaticResource ErrorBrush}" FontSize="16"
+                                                       Visibility="{Binding ErrorMessage, Converter={StaticResource NotNullToVis}}"/>
+                                            <TextBlock Text="{Binding Name}" FontSize="16" FontWeight="SemiBold"
+                                                       TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxHeight="44" MaxWidth="150"/>
+                                        </StackPanel>
+                                    </DockPanel>
+                                </Border>
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding State}" Value="PreWait">
+                                        <Setter TargetName="Tile" Property="Background" Value="#5C4B12"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding State}" Value="Running">
+                                        <Setter TargetName="Tile" Property="Background" Value="#1E5631"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding State}" Value="Stopping">
+                                        <Setter TargetName="Tile" Property="Background" Value="#6B4214"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding State}" Value="Error">
+                                        <Setter TargetName="Tile" Property="Background" Value="#6B1E1E"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding IsPaused}" Value="True">
+                                        <Setter TargetName="Tile" Property="Background" Value="#3E4A5C"/>
+                                    </DataTrigger>
+                                    <DataTrigger Value="True">
+                                        <DataTrigger.Binding>
+                                            <MultiBinding Converter="{StaticResource IsSame}">
+                                                <Binding/>
+                                                <Binding Path="DataContext.SelectedCue" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                            </MultiBinding>
+                                        </DataTrigger.Binding>
+                                        <Setter TargetName="Tile" Property="BorderBrush" Value="#5B9BF0"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding IsStandby}" Value="True">
+                                        <Setter TargetName="Tile" Property="BorderBrush" Value="#4CC26F"/>
+                                    </DataTrigger>
+                                    <Trigger SourceName="Tile" Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="Tile" Property="Opacity" Value="0.9"/>
+                                    </Trigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Border>
+
+            <TextBlock IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"
+                       TextAlignment="Center" Foreground="{StaticResource MutedBrush}" FontSize="15"
+                       Text="Arrossega aquí fitxers d'àudio, vídeo o imatges&#x0a;o fes servir els botons «+» per començar.">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Cues.Count}" Value="0">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+
+            <GridSplitter Grid.Column="1" Width="6" HorizontalAlignment="Stretch" Background="Transparent" Focusable="False"/>
+
+            <!-- Propietats -->
+            <Border Grid.Column="2" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                <Grid>
+                <!-- Diverses cues seleccionades: propietats comunes (es construeix en codi) -->
+                <ScrollViewer x:Name="BulkScroll" VerticalScrollBarVisibility="Auto" Focusable="False" Visibility="Collapsed">
+                    <StackPanel x:Name="BulkPanel" Margin="14,12"/>
+                </ScrollViewer>
+                <ScrollViewer x:Name="SingleScroll" VerticalScrollBarVisibility="Auto" Focusable="False">
+                    <StackPanel Margin="14,12">
+                        <TextBlock Text="PROPIETATS" Style="{StaticResource SectionHeader}"/>
+                        <TextBlock Text="Selecciona una cue per editar-la." Foreground="{StaticResource MutedBrush}"
+                                   Visibility="{Binding SelectedCue, Converter={StaticResource NullToVis}}"/>
+
+                        <StackPanel DataContext="{Binding SelectedCue}"
+                                    Visibility="{Binding Converter={StaticResource NotNullToVis}}">
+                            <DockPanel>
+                                <Button DockPanel.Dock="Right" Content="▶ Posa en espera" Click="SetStandby_Click" Padding="8,2"
+                                        ToolTip="Que el proper GO dispari aquesta cue (també: doble clic o Retorn)"/>
+                                <Button DockPanel.Dock="Right" Content="⇤ Treu del grup" Click="RemoveFromGroup_Click" Padding="8,2"
+                                        Visibility="{Binding HasParent, Converter={StaticResource BoolToVis}}"
+                                        ToolTip="La cue surt del grup i queda just després, al nivell del grup"/>
+                                <TextBlock Text="{Binding TypeName}" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            </DockPanel>
+
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="70"/>
+                                    <ColumnDefinition Width="10"/>
+                                    <ColumnDefinition/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="Número" Style="{StaticResource FieldLabel}"/>
+                                    <TextBox Text="{Binding Number, UpdateSourceTrigger=LostFocus}" ToolTip="Lliure: 1, 1.5, 2A…"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="Nom" Style="{StaticResource FieldLabel}"/>
+                                    <TextBox Text="{Binding Name, UpdateSourceTrigger=LostFocus}"/>
+                                </StackPanel>
+                            </Grid>
+                            <TextBlock Text="{Binding DataContext.DuplicateWarning, RelativeSource={RelativeSource AncestorType=Window}}"
+                                       Foreground="#F0B429" FontSize="12" TextWrapping="Wrap" Margin="0,4,0,0"/>
+
+                            <ContentControl Content="{Binding}" Focusable="False"/>
+
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition Width="10"/>
+                                    <ColumnDefinition/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="Pre-espera (s)" Style="{StaticResource FieldLabel}"/>
+                                    <TextBox Text="{Binding PreWait, UpdateSourceTrigger=LostFocus}"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="Post-espera (s)" Style="{StaticResource FieldLabel}"/>
+                                    <TextBox Text="{Binding PostWait, UpdateSourceTrigger=LostFocus}"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <TextBlock Text="Després d'aquesta cue" Style="{StaticResource FieldLabel}"/>
+                            <ComboBox ItemsSource="{x:Static local:Options.NextActions}"
+                                      SelectedValuePath="Value" DisplayMemberPath="Label"
+                                      SelectedValue="{Binding NextAction}"/>
+
+                            <TextBlock Text="Notes per a l'operador (es mostren a «En espera» i a la llista)" Style="{StaticResource FieldLabel}"/>
+                            <TextBox Text="{Binding Notes, UpdateSourceTrigger=LostFocus}" AcceptsReturn="True"
+                                     TextWrapping="Wrap" MinHeight="60" VerticalScrollBarVisibility="Auto"/>
+
+                            <TextBlock Text="Tecla directa (dispara aquesta cue a més del GO)" Style="{StaticResource FieldLabel}"/>
+                            <DockPanel>
+                                <Button DockPanel.Dock="Right" Content="✕" Padding="6,0" Margin="4,0,0,0" Click="ClearHotkey_Click" ToolTip="Sense tecla"/>
+                                <TextBox Tag="hotkey" IsReadOnly="True" Text="{Binding Hotkey, Mode=OneWay}"
+                                         ToolTip="Clica aquí i prem la tecla o combinació (F1, Ctrl+1…). Retrocés: sense tecla."/>
+                            </DockPanel>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- En curs -->
+        <Border Grid.Row="3" Margin="10,8,10,0" Background="{StaticResource PanelBrush}"
+                BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Padding="10,8">
+            <DockPanel>
+                <DockPanel DockPanel.Dock="Top">
+                    <TextBlock DockPanel.Dock="Right" Text="{Binding PreviewStatus}" Foreground="#7FB8FF" FontFamily="Consolas"
+                               ToolTip="S'està escoltant pels auriculars (el públic no ho sent). E per parar."/>
+                    <TextBlock Text="EN CURS" Style="{StaticResource SectionHeader}"/>
+                </DockPanel>
+                <TextBlock DockPanel.Dock="Top" Text="No sona res." Foreground="{StaticResource MutedBrush}">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding ActiveCues.Count}" Value="0">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+                <ScrollViewer MaxHeight="140" VerticalScrollBarVisibility="Auto" Focusable="False">
+                    <ItemsControl ItemsSource="{Binding ActiveCues}" Focusable="False">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="260"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="220"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{Binding DisplayName}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                    <ProgressBar Grid.Column="1" Value="{Binding Progress, Mode=OneWay}" Maximum="100"
+                                                 Height="10" VerticalAlignment="Center" Margin="8,0"/>
+                                    <TextBlock Grid.Column="2" Text="{Binding StatusText}" VerticalAlignment="Center"
+                                               FontFamily="Consolas" Margin="4,0"/>
+                                    <Button Grid.Column="3" Content="🔁 Surt del bucle" Click="DevampCue_Click" Padding="8,2"
+                                            Visibility="{Binding HasPendingLoop, Converter={StaticResource BoolToVis}}"
+                                            ToolTip="Acaba aquesta volta del bucle i continua fins al final"/>
+                                    <Button Grid.Column="4" Content="⏸" Click="PauseCue_Click" Padding="8,2" ToolTip="Pausa / reprèn aquesta cue"/>
+                                    <Button Grid.Column="5" Content="■ Atura" Click="StopCue_Click" Padding="8,2"
+                                            ToolTip="Atura amb la fosa de sortida; torna a prémer per tallar"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </DockPanel>
+        </Border>
+
+        <!-- Barra d'estat -->
+        <DockPanel Grid.Row="4" Margin="12,6,12,8">
+            <TextBlock DockPanel.Dock="Right" Foreground="{StaticResource MutedBrush}"
+                       Text="Espai: GO · ↑↓: cue en espera · Retorn: posa en espera la seleccionada · Esc: atura-ho tot · Maj+Esc: pànic · P: pausa · E: escolta"/>
+            <TextBlock Text="{Binding Status}" Foreground="{StaticResource MutedBrush}" TextTrimming="CharacterEllipsis"/>
+        </DockPanel>
+    </Grid>
+</Window>

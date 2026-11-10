@@ -1,0 +1,16 @@
+# Compilació
+bin/
+obj/
+.vs/
+*.user
+
+# El programa compilat va a les versions publicades (Releases), no al repositori
+Escena-Windows/
+*.zip
+
+# Vídeo de prova copiat de Windows (no es pot distribuir) i el fotograma que se'n va treure
+Demo/video-prova.mp4
+Demo/frame-video.png
+
+# Script personal per pujar el zip al Drive
+puja-escena.ps1

@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="ca">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escena · Instruccions</title>
+<style>
+:root{
+  --bg:#1b1d23; --panel:#23262e; --panel2:#2a2e38; --line:#353a46;
+  --text:#e6e8ee; --muted:#9aa1b0; --accent:#3ecf6e; --accent2:#4ea3ff;
+  --warn:#f0b43c; --danger:#e5534b; --code:#14161b;
+}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){
+    --bg:#f5f6f8; --panel:#ffffff; --panel2:#eef0f4; --line:#d9dce3;
+    --text:#1d2027; --muted:#5d6472; --accent:#1f9d4c; --accent2:#1f6fd1;
+    --warn:#a86b00; --danger:#c0362e; --code:#eef0f4;
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:16px}
+body{margin:0;background:var(--bg);color:var(--text);
+  font:15px/1.6 "Segoe UI",system-ui,-apple-system,sans-serif}
+a{color:var(--accent2);text-decoration:none}
+a:hover{text-decoration:underline}
+.layout{display:grid;grid-template-columns:250px 1fr;max-width:1180px;margin:0 auto}
+nav{position:sticky;top:0;height:100vh;overflow:auto;padding:24px 16px;border-right:1px solid var(--line)}
+nav .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:20px;margin-bottom:4px}
+nav .brand .logo{width:30px;height:30px;border-radius:8px;background:var(--accent);display:grid;place-items:center;color:#10131a;font-size:15px}
+nav .ver{color:var(--muted);font-size:13px;margin:0 0 18px 40px}
+nav input{width:100%;padding:7px 10px;border-radius:6px;border:1px solid var(--line);background:var(--panel);color:var(--text);font:inherit;font-size:14px;margin-bottom:14px}
+nav ul{list-style:none;margin:0;padding:0}
+nav li a{display:block;padding:4px 10px;border-radius:5px;color:var(--muted);font-size:14px}
+nav li a:hover,nav li a.on{background:var(--panel2);color:var(--text);text-decoration:none}
+main{padding:32px 40px 80px;min-width:0}
+header.hero{background:linear-gradient(135deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:14px;padding:28px 30px;margin-bottom:28px}
+header.hero h1{margin:0 0 6px;font-size:30px}
+header.hero p{margin:0;color:var(--muted);max-width:60ch}
+.quick{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-top:20px}
+.quick div{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:14px}
+.quick b{display:block;margin-bottom:2px}
+section{margin-bottom:38px}
+h2{font-size:22px;margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+h3{font-size:16px;margin:20px 0 6px}
+p,li{max-width:78ch}
+ul.list{padding-left:20px}
+ul.list li{margin:4px 0}
+table{width:100%;border-collapse:collapse;margin:10px 0;font-size:14px;background:var(--panel);border-radius:10px;overflow:hidden}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:var(--panel2);font-weight:600}
+tr:last-child td{border-bottom:none}
+td:first-child{white-space:nowrap;font-weight:600}
+kbd{display:inline-block;min-width:22px;padding:1px 7px;border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;background:var(--panel2);font:600 12.5px "Segoe UI",sans-serif;text-align:center;white-space:nowrap}
+code{background:var(--code);padding:1px 6px;border-radius:4px;font:13px Consolas,monospace}
+pre{background:var(--code);border:1px solid var(--line);padding:12px 14px;border-radius:8px;overflow:auto;font:13px Consolas,monospace}
+.note{border-left:3px solid var(--accent2);background:var(--panel);padding:10px 14px;border-radius:0 8px 8px 0;margin:12px 0}
+.note.warn{border-color:var(--warn)}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin:12px 0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.card h4{margin:0 0 4px;font-size:15px}
+.card p{margin:0;font-size:14px;color:var(--muted)}
+.tag{display:inline-block;font-size:12px;padding:1px 8px;border-radius:99px;background:var(--panel2);border:1px solid var(--line);margin-right:4px}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px;vertical-align:-1px}
+.indent{font-family:Consolas,monospace;font-size:13px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 14px;line-height:1.8}
+.indent .g{font-weight:700}
+.indent .c{padding-left:22px;color:var(--muted)}
+.hidden{display:none!important}
+@media (max-width:820px){
+  .layout{grid-template-columns:1fr}
+  nav{position:static;height:auto;border-right:none;border-bottom:1px solid var(--line)}
+  nav ul{display:flex;flex-wrap:wrap;gap:2px}
+  main{padding:20px 16px 60px}
+  td:first-child{white-space:normal}
+}
+@media print{
+  nav{display:none}.layout{display:block}main{padding:0}
+  body{background:#fff;color:#000}
+}
+</style>
+</head>
+<body>
+<div class="layout">
+<nav>
+  <div class="brand"><span class="logo">▶</span>Escena</div>
+  <div class="ver">Versió 0.6 · Instruccions</div>
+  <input id="q" type="search" placeholder="Cerca…" aria-label="Cerca a les instruccions">
+  <ul id="toc">
+    <li><a href="#inici">Per començar</a></li>
+    <li><a href="#cues">Tipus de cue</a></li>
+    <li><a href="#grups">Grups</a></li>
+    <li><a href="#encadenament">Encadenament</a></li>
+    <li><a href="#bucles">Bucles dins del fitxer</a></li>
+    <li><a href="#vistes">Vistes i cursors</a></li>
+    <li><a href="#controls">Controls en directe</a></li>
+    <li><a href="#escolta">Escoltar pels auriculars</a></li>
+    <li><a href="#sortides">Sortides d'àudio</a></li>
+    <li><a href="#matriu">Matriu i enviaments</a></li>
+    <li><a href="#ducking">Ducking</a></li>
+    <li><a href="#pantalles">Pantalles (vídeo)</a></li>
+    <li><a href="#eines">Eines</a></li>
+    <li><a href="#recuperacio">Còpia i recuperació</a></li>
+    <li><a href="#ajustos">Ajustos</a></li>
+    <li><a href="#espectacles">Fitxers d'espectacle</a></li>
+    <li><a href="#limits">Encara no provat</a></li>
+    <li><a href="#sobre">Sobre Escena</a></li>
+  </ul>
+</nav>
+
+<main>
+<header class="hero">
+  <h1>Escena</h1>
+  <p>Reproductor de cues per a teatre a Windows. Reprodueix àudio, vídeo, imatges, textos i micròfons en directe. No té llums ni MIDI.</p>
+  <div class="quick">
+    <div><b><kbd>Espai</kbd> GO</b>Dispara la cue en espera</div>
+    <div><b><kbd>Esc</kbd> Atura-ho tot</b>Amb fosa; dos cops talla</div>
+    <div><b><kbd>Maj</kbd>+<kbd>Esc</kbd> Pànic</b>Fosa curta; dos cops talla</div>
+    <div><b><kbd>↑</kbd> <kbd>↓</kbd> En espera</b>Mou la cue que sonarà</div>
+  </div>
+</header>
+
+<section id="inici">
+  <h2>Per començar</h2>
+  <ul class="list">
+    <li>Obre <code>Escena.exe</code>. No cal instal·lar res.</li>
+    <li>Per portar-lo a un altre ordinador, <b>copia la carpeta <code>Escena-Windows</code> sencera</b>: hi ha la carpeta <code>libvlc</code>, que és el que reprodueix el vídeo.</li>
+    <li>Afegeix cues amb els botons de la barra (<span class="tag">+ Àudio</span><span class="tag">+ Vídeo</span><span class="tag">+ Text</span><span class="tag">+ Micròfon</span>…) o arrossegant fitxers a la llista.</li>
+    <li>Tria la cue en espera i prem <kbd>Espai</kbd> per fer GO.</li>
+    <li>Abans de la funció, prem <span class="tag">✓ Comprova</span>.</li>
+  </ul>
+</section>
+
+<section id="cues">
+  <h2>Tipus de cue</h2>
+  <div class="cards">
+    <div class="card"><h4>🔊 Àudio</h4><p>WAV, MP3, FLAC, AIFF, M4A, WMA. Volum en dB, panorama, inici i final (arrossegables sobre la forma d'ona), bucle, foses amb corba i bucles dins del fitxer.</p></div>
+    <div class="card"><h4>🎬 Vídeo</h4><p>MP4, MOV, MKV, AVI, WMV, WebM, MPG… Volum, inici i final, bucle, fosa des de negre i a negre. En acabar torna a negre.</p></div>
+    <div class="card"><h4>🖼 Imatge</h4><p>JPG, PNG, BMP, GIF, TIFF amb foses. Temps en pantalla, o 0 perquè es quedi fins que l'aturis.</p></div>
+    <div class="card"><h4>🔤 Text</h4><p>Títols, rètols i sobretítols: mida, color, posició (dalt, mig, baix), franja fosca, temps i foses. «Treu els altres textos» substitueix l'anterior.</p></div>
+    <div class="card"><h4>🎤 Micròfon</h4><p>Entrada en directe cap a les sortides, amb volum, panorama, foses, matriu, enviaments i ducking. Sona fins que l'atures.</p></div>
+    <div class="card"><h4>↘ Fosa</h4><p>Porta una cue a un volum i/o panorama en X segons, amb corba. Opcionalment l'atura. En vídeo i imatge també enfosqueix.</p></div>
+    <div class="card"><h4>■ Atura · Pausa · Reprèn · Surt del bucle</h4><p>Sobre una cue destí o sobre totes les que sonen. En aturar, fosa de cada cue o una de fixa.</p></div>
+    <div class="card"><h4>⏱ Espera</h4><p>Una pausa cronometrada. Amb «Segueix» fa seqüències automàtiques.</p></div>
+    <div class="card"><h4>📁 Grup</h4><p>Conté altres cues, sagnades a sota. Cinc modes. <a href="#grups">Vegeu Grups</a>.</p></div>
+  </div>
+  <h3>Corbes de fosa</h3>
+  <p>Lineal · <b>exponencial</b> (passos iguals de dB, la que sona més regular) · en S · quadràtica (lenta al principi) · quadràtica inversa (ràpida al principi).</p>
+  <h3>Editar diverses cues alhora</h3>
+  <p>Selecciona'n unes quantes (<kbd>Ctrl</kbd>+clic o <kbd>Maj</kbd>+clic) i el panell de propietats mostra <b>només les que tenen totes</b>. Un camp en blanc vol dir que tenen valors diferents; el que hi posis (<kbd>Retorn</kbd> o canviant de camp) s'aplica a totes. Amb <span class="tag">Numera</span> les tornes a numerar per ordre de llista amb un inici i un pas (10, 10.5, 11…).</p>
+  <h3>Número, notes i tecla directa</h3>
+  <ul class="list">
+    <li>Cada cue té un <b>número lliure</b> («1», «1.5», «2A»…). Les noves en reben un automàticament. Si se'n repeteix un, surt un avís.</li>
+    <li>Les <b>notes per a l'operador</b> es veuen a la llista i a «En espera».</li>
+    <li>La <b>tecla directa</b> (F1, Ctrl+1, una lletra…) dispara la cue a més del GO, sense moure la cue en espera. Fes clic al camp «Tecla directa» i prem la tecla; <kbd>Retrocés</kbd> la treu. Les tecles que ja fa servir Escena no es poden triar.</li>
+  </ul>
+</section>
+
+<section id="grups">
+  <h2>Grups</h2>
+  <p>Un grup <b>conté</b> les seves cues («fills»): a la llista van just a sota, sagnades cap a la dreta. Amb el triangle ▾ / ▸ el plegues o el desplegues; plegat funciona igual.</p>
+  <div class="indent">
+    <div>1 &nbsp;Música d'entrada</div>
+    <div class="g">▾ 2 &nbsp;Tempesta <span style="color:var(--muted);font-weight:400">· Grup · alhora</span></div>
+    <div class="c">2.1 Pluja</div>
+    <div class="c">2.2 Trons</div>
+    <div class="c">2.3 Llamp (imatge)</div>
+    <div>3 &nbsp;Silenci</div>
+  </div>
+  <h3>Fer grups i posar-hi cues</h3>
+  <ul class="list">
+    <li>Selecciona unes quantes cues (<kbd>Ctrl</kbd>+clic o <kbd>Maj</kbd>+clic) i prem <span class="tag">+ Grup</span> o <kbd>Ctrl</kbd>+<kbd>G</kbd>. Sense res seleccionat, crea un grup buit.</li>
+    <li><b>Arrossega</b> una cue al mig d'una fila de grup (es marca tota en blau) i hi entra com a última fill. A la vora de dalt o de baix d'una fila, va davant o darrere d'aquella cue, al seu nivell.</li>
+    <li>Una cue nova va després de la seleccionada i al mateix nivell.</li>
+    <li><span class="tag">⇤ Treu del grup</span> (panell de propietats) la treu i la deixa just després. <span class="tag">Desagrupa</span> treu el grup i deixa les cues a la llista.</li>
+    <li>Moure o esborrar un grup el mou o l'esborra amb tot el que conté (Escena avisa abans d'esborrar).</li>
+  </ul>
+  <h3>Modes</h3>
+  <table>
+    <tr><th>Mode</th><th>Què fa</th><th>Després del GO</th></tr>
+    <tr><td>Línia de temps</td><td>Totes les fills comencen alhora; la <b>pre-espera</b> de cadascuna és quan sona dins del grup.</td><td>Cue de després del grup</td></tr>
+    <tr><td>Llista</td><td>Les fills sonen una darrere l'altra. Es poden barrejar i repetir en bucle.</td><td>Cue de després del grup</td></tr>
+    <tr><td>Entra</td><td>El GO dispara la primera fill; cada GO, la següent. Serveix per fer seccions.</td><td>La fill següent; en acabar, surt del grup</td></tr>
+    <tr><td>Primera</td><td>Només la primera fill; les altres sonen si estan encadenades.</td><td>Cue de després del grup</td></tr>
+    <tr><td>Aleatòria</td><td>Cada GO, una fill a l'atzar sense repetir fins que han sonat totes.</td><td>—</td></tr>
+  </table>
+  <div class="note">Dins de les línies de temps, les llistes i els grups aleatoris és el grup qui decideix quan sona cada fill: els «Continua» i «Segueix» de les fills no fan res. Aturar un grup atura tot el que conté.</div>
+  <p>Els grups de versions anteriors (que apuntaven a cues d'altres llocs) es converteixen sols en obrir l'espectacle.</p>
+</section>
+
+<section id="encadenament">
+  <h2>Encadenament</h2>
+  <p>Cada cue té <b>pre-espera</b> i <b>post-espera</b>, i en acabar fa una d'aquestes coses:</p>
+  <table>
+    <tr><td>Cap</td><td>Espera el GO.</td></tr>
+    <tr><td>Continua</td><td>Dispara la cue següent quan aquesta <b>comença</b>, després de la post-espera.</td></tr>
+    <tr><td>Segueix</td><td>Dispara la cue següent quan aquesta <b>acaba</b>, després de la post-espera.</td></tr>
+  </table>
+</section>
+
+<section id="bucles">
+  <h2>Bucles dins del fitxer</h2>
+  <p>A una cue d'àudio, <span class="tag">+ Bucle</span> marca un tros que es repeteix (inici, final, repeticions). Es veu en groc sobre la forma d'ona.</p>
+  <ul class="list">
+    <li><b>Repeticions = 0:</b> es repeteix fins que se'n surt, amb una cue «Surt del bucle» o amb <span class="tag">🔁 Surt del bucle</span> del panell «En curs». S'acaba la volta i continua fins al final.</li>
+    <li><b>Repeticions = N:</b> es repeteix N vegades més i continua sol.</li>
+  </ul>
+</section>
+
+<section id="vistes">
+  <h2>Vistes i cursors</h2>
+  <p>Hi ha <b>dos cursors separats</b>:</p>
+  <ul class="list">
+    <li><span class="dot" style="background:var(--accent)"></span><b>En espera (▶ verd):</b> la cue que dispararà el proper GO. Es mou amb <kbd>↑</kbd> <kbd>↓</kbd>, doble clic, <kbd>Retorn</kbd> o <span class="tag">▶ Posa en espera</span>.</li>
+    <li><span class="dot" style="background:var(--accent2)"></span><b>Seleccionada (blau):</b> la que edites al panell de propietats. Clic o <kbd>Maj</kbd>+<kbd>↑</kbd><kbd>↓</kbd>. Pots editar mentre corre l'espectacle sense moure el GO.</li>
+  </ul>
+  <div class="note">Quan la llista s'ha acabat i no hi ha res en espera, un clic amb el ratolí sobre una cue també la posa en espera.</div>
+  <h3>Llista <kbd>F5</kbd> · Botonera <kbd>F6</kbd></h3>
+  <p>A la botonera, <b>un clic dispara la cue</b> (i si ja sona, l'atura). <b>Botó dret</b> la selecciona per editar-la. La vora verda marca la cue en espera.</p>
+  <p>
+    <span class="dot" style="background:#3ecf6e"></span>sona &nbsp;
+    <span class="dot" style="background:#f0d03c"></span>pre-espera &nbsp;
+    <span class="dot" style="background:#f08a3c"></span>s'està aturant &nbsp;
+    <span class="dot" style="background:#7d8aa3"></span>en pausa &nbsp;
+    <span class="dot" style="background:#e5534b"></span>error
+  </p>
+</section>
+
+<section id="controls">
+  <h2>Controls en directe</h2>
+  <table>
+    <tr><th>Tecla / botó</th><th>Acció</th></tr>
+    <tr><td><kbd>Espai</kbd> · GO</td><td>Dispara la cue en espera. Protecció de doble GO: s'ignoren els GO massa seguits (250 ms per defecte).</td></tr>
+    <tr><td><kbd>Esc</kbd> · ATURA-HO TOT</td><td>Atura-ho tot amb la fosa de cada cue. Si el tornes a prémer abans de 3 s, talla de cop.</td></tr>
+    <tr><td><kbd>Maj</kbd>+<kbd>Esc</kbd> · PÀNIC</td><td>Primer toc: fosa curta de tot (0,5 s) i cancel·la encadenaments. Segon toc: talla de cop. Funciona fins i tot escrivint en un camp.</td></tr>
+    <tr><td><kbd>P</kbd> · Pausa</td><td>Pausa o reprèn tot.</td></tr>
+    <tr><td><kbd>E</kbd> · 🎧 Escolta</td><td>Escolta la cue seleccionada sense tocar l'espectacle. Torna a prémer per parar.</td></tr>
+    <tr><td>Volum general</td><td>Afecta totes les sortides. Doble clic el torna a 0 dB.</td></tr>
+    <tr><td>🔁 ⏸ ■ a «En curs»</td><td>Surt del bucle · pausa · atura una sola cue.</td></tr>
+    <tr><td><kbd>↑</kbd><kbd>↓</kbd> · <kbd>Retorn</kbd> · doble clic</td><td>Mou la cue en espera · posa en espera la seleccionada.</td></tr>
+    <tr><td><kbd>Maj</kbd>+<kbd>↑</kbd><kbd>↓</kbd></td><td>Canvia la seleccionada.</td></tr>
+    <tr><td><kbd>Supr</kbd></td><td>Elimina la seleccionada.</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>↑</kbd><kbd>↓</kbd></td><td>Mou la seleccionada entre les del seu nivell.</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>G</kbd></td><td>Fa un grup amb les cues seleccionades.</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>C</kbd> <kbd>X</kbd> <kbd>V</kbd> <kbd>D</kbd></td><td>Copia, retalla, enganxa i duplica les cues seleccionades (Ctrl+clic o Maj+clic per triar-ne diverses). Un grup es copia amb el que conté. S'enganxen després de l'última seleccionada, amb números nous si cal; les foses copiades amb la seva cue apunten a la còpia. Funciona entre espectacles i també des del botó dret de la llista.</td></tr>
+    <tr><td>Arrossegar i deixar</td><td>Reordena, a la llista i a la botonera. Una línia blava marca on quedarà.</td></tr>
+  </table>
+</section>
+
+<section id="escolta">
+  <h2>Escoltar pels auriculars</h2>
+  <p>Amb <span class="tag">🎧 Escolta</span> o <kbd>E</kbd> escoltes una cue d'àudio sense moure res de l'espectacle.</p>
+  <ul class="list">
+    <li><b>Per defecte sona per la mateixa sortida que la cue</b>: el cas habitual quan l'espectacle ja va als teus auriculars. Esc i PÀNIC també l'aturen.</li>
+    <li><b>Si l'espectacle surt pels altaveus de la sala</b>, tria a ⚙ Ajustos un dispositiu d'escolta a part. Si no està connectat, no sona res: mai no passa als altaveus.</li>
+    <li>Aquest ajust es desa a l'ordinador, no a l'espectacle.</li>
+  </ul>
+</section>
+
+<section id="sortides">
+  <h2>Sortides d'àudio</h2>
+  <p>Botó 🔊 a dalt a la dreta. Les sortides es defineixen a part i cada cue tria per quina sona.</p>
+  <table>
+    <tr><td>WASAPI compartit</td><td>El recomanat. Fa servir els canals del dispositiu.</td></tr>
+    <tr><td>WASAPI exclusiu</td><td>Latència més baixa, però té el dispositiu tot per a ell.</td></tr>
+    <tr><td>ASIO</td><td>Per a targetes professionals. Pots triar el primer canal i quants canals.</td></tr>
+  </table>
+  <p>Cada sortida té volum propi i prova de so. Si el dispositiu no hi és, s'usa el predeterminat i surt un avís.</p>
+</section>
+
+<section id="matriu">
+  <h2>Matriu i enviaments</h2>
+  <ul class="list">
+    <li>Cada cue d'àudio o micròfon té una <b>sortida principal</b> i, si vols, <b>enviaments</b> a altres sortides (monitors, efectes…), cadascun amb el seu nivell en dB.</li>
+    <li><span class="tag">Matriu…</span> obre una graella: files = canals de la cue, columnes = canals de la sortida. Nivell en dB a cada casella (buida = no hi va). El 🔊 de cada columna fa sonar un to per saber quin altaveu és.</li>
+    <li>Si la matriu no és la de per defecte, el botó diu «Matriu ✱».</li>
+  </ul>
+</section>
+
+<section id="ducking">
+  <h2>Ducking</h2>
+  <p>Marca «Ducking» en una cue d'àudio o micròfon (una veu, un avís…) i, mentre sona, <b>les altres cues baixen</b> els dB que diguis, amb el temps de baixada i pujada que triïs. Quan s'atura, tornen a pujar. També baixa el so dels vídeos.</p>
+</section>
+
+<section id="pantalles">
+  <h2>Pantalles (vídeo, imatges i text)</h2>
+  <ul class="list">
+    <li>Les cues visuals surten per una <b>sortida de pantalla</b>. Se'n crea una amb el primer vídeo o imatge; es canvia a 🔊 → «Pantalla». Amb «+ Pantalla» en pots tenir diverses.</li>
+    <li><b>Pantalla ampliada (projector):</b> pantalla completa, sense vores ni cursor, <b>en negre des que s'obre l'espectacle</b>. No agafa el teclat.</li>
+    <li><b>Pantalla principal:</b> en finestra, sempre per sobre d'Escena.</li>
+    <li><span class="tag">Identifica totes les pantalles</span> mostra el número de cada pantalla.</li>
+    <li>Sense el projector, el vídeo surt en finestra i es mostra un avís.</li>
+    <li>Un vídeo o imatge nou queda a sobre de l'anterior: amb les foses es fan encadenats.</li>
+    <li><b>So del vídeo per:</b> cada cue de vídeo tria per on surt el so: «Predeterminat de Windows» o qualsevol sortida d'àudio de l'espectacle. Per una sortida d'Escena segueix el volum general, les foses, la pausa i el ducking (també amb ASIO), sincronitzat amb la imatge.</li>
+  </ul>
+  <h3>Correcció del projector</h3>
+  <p>Mou les quatre cantonades de la imatge (en % de la pantalla) quan el projector està descentrat o inclinat. Si la pantalla és oberta es veu en directe; «graella de prova» hi dibuixa una quadrícula. <kbd>↑</kbd><kbd>↓</kbd> als camps mouen 0,1 % (amb <kbd>Maj</kbd>, 1 %).</p>
+</section>
+
+<section id="eines">
+  <h2>Eines</h2>
+  <div class="cards">
+    <div class="card"><h4>✓ Comprova</h4><p>Fitxers que falten, sortides i micròfons desconnectats, cues buides, foses mal posades, bucles de «Segueix», tecles i números repetits, volums massa alts, canvis sense desar. Doble clic per anar a la cue.</p></div>
+    <div class="card"><h4>Comença des de…</h4><p>«Com si fóssim a 2:00 de la cue 14»: les cues que ja sonarien comencen a mitges, les foses ja fetes s'apliquen i les que vénen es disparen al seu moment. Només coneix el que és automàtic.</p></div>
+    <div class="card"><h4>Registre d'assaig</h4><p>Cada cue disparada, com i quan. «Encadena amb l'anterior» converteix un GO en automàtic amb la post-espera real. Exporta a CSV; es desa sol a <code>%APPDATA%\Escena\registre\</code>.</p></div>
+    <div class="card"><h4>Vista de regidor</h4><p>Finestra amb lletra gran: cue en curs, temps restant, la següent, notes i rellotge. <kbd>F11</kbd> pantalla completa, <kbd>F10</kbd> pantalla següent, <kbd>Espai</kbd> fa GO.</p></div>
+    <div class="card"><h4>Empaqueta l'espectacle</h4><p>Copia l'espectacle i tots els fitxers a una carpeta (a «Fitxers\»). Després treballes amb la còpia.</p></div>
+    <div class="card"><h4>Importa sobretítols</h4><p>Un fitxer de text: cada bloc separat per una línia en blanc es converteix en una cue de text a baix. Cada GO en mostra un.</p></div>
+  </div>
+  <h3 id="qlab">Exporta al QLab (Mac)</h3>
+  <p>Eines ▾ → «Exporta al QLab (Mac)…» crea una carpeta <code>‹espectacle› (QLab)</code> amb:</p>
+  <ul class="list">
+    <li><code>media</code>: tots els fitxers de so, vídeo i imatge;</li>
+    <li><code>Importa a QLab.applescript</code>: l'script que crea les cues;</li>
+    <li><code>Informe QLab.txt</code>: com fer-ho i què cal acabar a mà.</li>
+  </ul>
+  <p><b>Al Mac:</b> copia-hi la carpeta sencera, obre el QLab 5 amb un espai de treball, fes doble clic a l'script i prem ▶ a l'Editor de Scripts (la primera vegada demana permís per controlar el QLab). Les cues s'afegeixen al final de la llista.</p>
+  <table>
+    <tr><th>Passa al QLab</th><th>Cal fer a mà</th></tr>
+    <tr><td style="white-space:normal;font-weight:400">Números, noms, notes, esperes, Continua/Segueix, fitxers, volum, inici/final, bucles i slices, textos, foses, aturades, pauses, Devamp, esperes i grups amb el seu mode. La fosa d'entrada i el temps en pantalla es fan amb un grup «Timeline».</td>
+        <td>Sortides i matriu, enviaments, ducking, panorama, tecles directes, corbes de fosa, correcció del projector.</td></tr>
+  </table>
+  <div class="note warn">Encara no s'ha provat en un Mac amb QLab. Si el QLab no accepta alguna cosa, l'script continua i ho diu al final.</div>
+</section>
+
+<section id="recuperacio">
+  <h2>Còpia automàtica i recuperació</h2>
+  <ul class="list">
+    <li>Els canvis sense desar es copien <b>cada 30 s</b> a part. Mai no sobreescriu el teu fitxer.</li>
+    <li>Escena recorda contínuament la cue en espera i l'última disparada.</li>
+    <li>Si es tanca malament, en obrir-lo pregunta si vols <b>recuperar i continuar des de la cue on era</b>, recuperar des del principi o començar de nou.</li>
+  </ul>
+</section>
+
+<section id="ajustos">
+  <h2>Ajustos ⚙</h2>
+  <table>
+    <tr><th>Ajust</th><th>Per defecte</th><th>On es desa</th></tr>
+    <tr><td>Protecció de doble GO</td><td>250 ms</td><td>a l'espectacle</td></tr>
+    <tr><td>Fosa del primer toc de PÀNIC</td><td>0,5 s</td><td>a l'espectacle</td></tr>
+    <tr><td>Còpia de seguretat cada</td><td>30 s</td><td>a l'espectacle</td></tr>
+    <tr><td>Sortida per escoltar cues</td><td>la mateixa que la cue</td><td>a l'ordinador</td></tr>
+    <tr><td>Idioma</td><td>català (també anglès)</td><td>a l'ordinador · s'aplica en tornar a obrir</td></tr>
+  </table>
+</section>
+
+<section id="espectacles">
+  <h2>Fitxers d'espectacle</h2>
+  <p>Es desen com a <code>.show</code>. Les rutes dels fitxers es guarden <b>relatives a la carpeta de l'espectacle</b>: si ho tens tot a la mateixa carpeta, la pots moure sencera. Els <code>.escena</code> de la versió 0.1 s'obren i es desen com a <code>.show</code>. Hi ha un exemple a <code>Demo\Demo.show</code>.</p>
+</section>
+
+<section id="limits">
+  <h2>Encara no provat amb aparells reals</h2>
+  <div class="note warn">Targetes multicanal i ASIO · micròfon en directe (latència i acoblament) · projector de veritat amb la correcció. Prova-ho abans d'una funció.</div>
+</section>
+
+<section id="sobre">
+  <h2>Sobre Escena</h2>
+  <p>Escena és programari lliure amb llicència <b>GPL-3.0</b> (fitxer <code>LICENSE.txt</code>): el pots fer servir, copiar, modificar i redistribuir, sempre que les versions que distribueixis mantinguin la mateixa llicència i el codi font. Es distribueix <b>sense cap garantia</b>. Fa servir NAudio i VLC (vegeu <code>THIRD-PARTY-NOTICES.md</code>).</p>
+  <p>Escena s'ha programat amb l'ajuda d'intel·ligència artificial (Claude, d'Anthropic), sota la direcció, el disseny i les proves de Metromàtic. Inspirat en Linux Show Player i en QLab, però sense codi de cap dels dos.</p>
+</section>
+</main>
+</div>
+<script>
+(function(){
+  var q=document.getElementById('q'), secs=[].slice.call(document.querySelectorAll('main section')),
+      links=[].slice.call(document.querySelectorAll('#toc a'));
+  q.addEventListener('input',function(){
+    var t=q.value.trim().toLowerCase();
+    secs.forEach(function(s){
+      var hit=!t||s.textContent.toLowerCase().indexOf(t)>=0;
+      s.classList.toggle('hidden',!hit);
+      var a=document.querySelector('#toc a[href="#'+s.id+'"]');
+      if(a)a.parentNode.classList.toggle('hidden',!hit);
+    });
+    document.querySelector('header.hero').classList.toggle('hidden',!!t);
+  });
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){
+      es.forEach(function(e){ if(e.isIntersecting){
+        links.forEach(function(a){a.classList.toggle('on',a.getAttribute('href')==='#'+e.target.id);});
+      }});
+    },{rootMargin:'0px 0px -70% 0px'});
+    secs.forEach(function(s){io.observe(s);});
+  }
+})();
+</script>
+</body>
+</html>
