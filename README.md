@@ -44,7 +44,7 @@ dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=
 
 C# · WPF · .NET 8 · [NAudio](https://github.com/naudio/NAudio) · [LibVLCSharp](https://code.videolan.org/videolan/LibVLCSharp). Vegeu [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
 
-La carpeta `Demo` té un espectacle d'exemple amb tons i una imatge. El vídeo de l'exemple no s'inclou al repositori: posa-hi qualsevol vídeo curt amb el nom `hipopotam_en_moviment.mp4`.
+La carpeta `Demo` té un espectacle d'exemple amb tons, una imatge i un vídeo curt d'un hipopòtam (`hipopotam_en_moviment.mp4`, sense so), generat amb Claude a partir d'instruccions de Metromàtic.
 
 ## Llicència
 

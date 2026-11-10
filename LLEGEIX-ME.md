@@ -8,7 +8,7 @@ Programa nou per a Windows inspirat en Linux Show Player. Reprodueix àudio, ví
 |---|---|
 | `Escena-Windows\` | El programa compilat (no és al repositori: es baixa de les versions publicades). `Escena.exe`, la carpeta `libvlc` (el VLC per al vídeo), les instruccions en HTML i la llicència. No cal instal·lar res, però **per moure'l a un altre ordinador cal copiar la carpeta sencera**. |
 | `Escena\` | El codi font (C# / WPF / .NET 8 + NAudio + LibVLCSharp). |
-| `Demo\Demo.show` | Espectacle d'exemple amb tons, una imatge i un vídeo. El vídeo no s'inclou al repositori: posa-hi qualsevol vídeo curt amb el nom `hipopotam_en_moviment.mp4`. |
+| `Demo\Demo.show` | Espectacle d'exemple amb tons, una imatge i un vídeo (`hipopotam_en_moviment.mp4`, 6 s, sense so, generat amb Claude a partir d'instruccions de Metromàtic). |
 
 ## Tipus de cue
 
