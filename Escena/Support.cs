@@ -75,6 +75,9 @@ public sealed class AppSettings
     /// <summary>Idioma de la interfície («ca», «en»). Es canvia a Ajustos i s'aplica en tornar a obrir Escena.</summary>
     public string Language { get; set; } = "ca";
 
+    /// <summary>Mentre Escena és obert, l'ordinador no s'adorm ni hiberna i la pantalla no s'apaga.</summary>
+    public bool KeepAwake { get; set; } = true;
+
     private static string FilePath => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Escena", "ajustos.json");
 

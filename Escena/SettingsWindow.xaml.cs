@@ -29,6 +29,7 @@ public partial class SettingsWindow : Window
 
         LanguageCombo.ItemsSource = Options.Languages;
         LanguageCombo.SelectedValue = Options.Languages.Any(o => o.Value == show.MachineSettings.Language) ? show.MachineSettings.Language : "ca";
+        KeepAwakeBox.IsChecked = show.MachineSettings.KeepAwake;
     }
 
     /// <summary>Avisa si els auriculars són el mateix dispositiu que una sortida del públic.</summary>
@@ -69,6 +70,13 @@ public partial class SettingsWindow : Window
         _show.Settings.AutosaveSeconds = (int)Math.Round(autosave);
         string preview = PreviewCombo.SelectedValue as string ?? "";
         if (preview != _show.MachineSettings.PreviewDeviceId) _show.SetPreviewDevice(preview);
+        bool keepAwake = KeepAwakeBox.IsChecked == true;
+        if (keepAwake != _show.MachineSettings.KeepAwake)
+        {
+            _show.MachineSettings.KeepAwake = keepAwake;
+            _show.MachineSettings.Save();
+        }
+        PowerGuard.Apply(keepAwake);
         if (LanguageCombo.SelectedValue is string language && language != _show.MachineSettings.Language)
         {
             _show.MachineSettings.Language = language;

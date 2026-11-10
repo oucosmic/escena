@@ -24,6 +24,11 @@
         <TextBlock Text="Idioma de la interfície (s'aplica en tornar a obrir Escena)" Style="{StaticResource FieldLabel}"/>
         <ComboBox x:Name="LanguageCombo" DisplayMemberPath="Label" SelectedValuePath="Value" Width="200" HorizontalAlignment="Left"/>
 
+        <CheckBox x:Name="KeepAwakeBox" Margin="0,14,0,0"
+                  Content="Mentre Escena és obert, no deixis dormir l'ordinador ni apagar la pantalla"/>
+        <TextBlock Foreground="#A9B4C2" TextWrapping="Wrap" Margin="20,4,0,0" FontSize="12"
+                   Text="Recomanat: així el projector no perd el senyal ni surt l'estalvi de pantalla mentre s'espera el primer GO. Tancar la tapa del portàtil sí que l'adorm."/>
+
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,18,0,0">
             <Button Content="D'acord" Width="100" Click="Ok_Click"/>
             <Button Content="Cancel·la" Width="100" Click="Cancel_Click"/>

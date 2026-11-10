@@ -86,9 +86,32 @@
                 <TextBlock Text="{Binding ErrorMessage}" Foreground="{StaticResource ErrorBrush}" TextWrapping="Wrap"
                            Margin="0,4,0,0" Visibility="{Binding ErrorMessage, Converter={StaticResource NotNullToVis}}"/>
 
-                <c:WaveformView Height="86" Margin="0,8,0,0"
+                <c:WaveformView x:Name="Wave" Height="86" Margin="0,8,0,0"
                                 FilePath="{Binding FilePath}" StartAt="{Binding StartAt}" EndAt="{Binding EndAt}"
                                 Elapsed="{Binding Elapsed}" ShowPlayhead="{Binding IsActive}" Slices="{Binding Slices}"/>
+                <!-- Desplaçament quan hi ha zoom -->
+                <ScrollBar Orientation="Horizontal" Height="14" Margin="0,1,0,0"
+                           Minimum="0" Maximum="{Binding ScrollMax, ElementName=Wave}"
+                           ViewportSize="{Binding ScrollViewport, ElementName=Wave}"
+                           Value="{Binding ScrollOffset, ElementName=Wave, Mode=TwoWay}"
+                           SmallChange="0.05" LargeChange="{Binding ScrollViewport, ElementName=Wave}"
+                           Visibility="{Binding IsZoomedView, ElementName=Wave, Converter={StaticResource BoolToVis}}"
+                           ToolTip="Desplaça't pel fitxer"/>
+                <!-- Zoom de la forma d'ona -->
+                <StackPanel Orientation="Horizontal" Margin="0,3,0,0">
+                    <StackPanel.Resources>
+                        <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                            <Setter Property="Padding" Value="7,1"/>
+                            <Setter Property="Margin" Value="0,0,3,0"/>
+                            <Setter Property="CommandTarget" Value="{Binding ElementName=Wave}"/>
+                        </Style>
+                    </StackPanel.Resources>
+                    <Button Content="🔍+" Command="{x:Static c:WaveformView.ZoomInCommand}" ToolTip="Amplia (també amb la roda del ratolí sobre la forma d'ona)"/>
+                    <Button Content="🔍−" Command="{x:Static c:WaveformView.ZoomOutCommand}" ToolTip="Redueix"/>
+                    <Button Content="Tot" Command="{x:Static c:WaveformView.ZoomAllCommand}" ToolTip="Torna a veure tot el fitxer"/>
+                    <Button Content="▏Inici" Command="{x:Static c:WaveformView.ZoomStartCommand}" ToolTip="Amplia al voltant del punt d'inici per afinar-lo"/>
+                    <Button Content="Final▕" Command="{x:Static c:WaveformView.ZoomEndCommand}" ToolTip="Amplia al voltant del punt final per afinar-lo"/>
+                </StackPanel>
                 <DockPanel Margin="0,3,0,0">
                     <Button DockPanel.Dock="Right" Content="🎧 Escolta" Click="Preview_Click" Padding="8,2"
                             ToolTip="Escolta-la pels auriculars sense que ho senti el públic (E). Torna a prémer per parar."/>
@@ -134,11 +157,11 @@
                     </Grid.ColumnDefinitions>
                     <StackPanel>
                         <TextBlock Text="Inici (s)" Style="{StaticResource FieldLabel}"/>
-                        <TextBox Text="{Binding StartAt, StringFormat={}{0:0.00}, UpdateSourceTrigger=LostFocus}"/>
+                        <TextBox Text="{Binding StartAt, StringFormat={}{0:0.000}, UpdateSourceTrigger=LostFocus}"/>
                     </StackPanel>
                     <StackPanel Grid.Column="2">
                         <TextBlock Text="Final (s) — 0 = fins al final" Style="{StaticResource FieldLabel}"/>
-                        <TextBox Text="{Binding EndAt, StringFormat={}{0:0.00}, UpdateSourceTrigger=LostFocus}"/>
+                        <TextBox Text="{Binding EndAt, StringFormat={}{0:0.000}, UpdateSourceTrigger=LostFocus}"/>
                     </StackPanel>
                 </Grid>
 
@@ -318,11 +341,11 @@
                     </Grid.ColumnDefinitions>
                     <StackPanel>
                         <TextBlock Text="Inici (s)" Style="{StaticResource FieldLabel}"/>
-                        <TextBox Text="{Binding StartAt, StringFormat={}{0:0.00}, UpdateSourceTrigger=LostFocus}"/>
+                        <TextBox Text="{Binding StartAt, StringFormat={}{0:0.000}, UpdateSourceTrigger=LostFocus}"/>
                     </StackPanel>
                     <StackPanel Grid.Column="2">
                         <TextBlock Text="Final (s) — 0 = fins al final" Style="{StaticResource FieldLabel}"/>
-                        <TextBox Text="{Binding EndAt, StringFormat={}{0:0.00}, UpdateSourceTrigger=LostFocus}"/>
+                        <TextBox Text="{Binding EndAt, StringFormat={}{0:0.000}, UpdateSourceTrigger=LostFocus}"/>
                     </StackPanel>
                 </Grid>
 

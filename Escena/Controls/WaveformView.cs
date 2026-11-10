@@ -12,10 +12,27 @@ namespace Escena.Controls;
 /// Forma d'ona d'un fitxer amb els punts d'inici (verd) i final (vermell) arrossegables
 /// i el capçal de reproducció. Clic esquerre: mou el marcador més proper. Clic dret: posa el final.
 /// Doble clic: torna a tot el fitxer.
+/// Zoom: roda del ratolí (al voltant del punter), Maj+roda o arrossegar amb el botó del mig per desplaçar,
+/// i les ordres <see cref="ZoomInCommand"/>, <see cref="ZoomOutCommand"/>, <see cref="ZoomAllCommand"/>,
+/// <see cref="ZoomStartCommand"/> i <see cref="ZoomEndCommand"/> (botons sota la forma d'ona).
 /// </summary>
 public sealed class WaveformView : FrameworkElement
 {
-    private const int Bins = 1200;
+    /// <summary>Resolució de la forma d'ona: punts per segon de fitxer (5 ms), perquè es pugui ampliar molt.</summary>
+    private const int BinsPerSecond = 200;
+    private const int MinBins = 1200, MaxBins = 2_000_000;
+    /// <summary>El tros més curt que es pot veure en ampliar (segons).</summary>
+    private const double MinView = 0.05;
+
+    public static readonly RoutedUICommand ZoomInCommand = new("Amplia", "ZoomIn", typeof(WaveformView));
+    public static readonly RoutedUICommand ZoomOutCommand = new("Redueix", "ZoomOut", typeof(WaveformView));
+    public static readonly RoutedUICommand ZoomAllCommand = new("Tot el fitxer", "ZoomAll", typeof(WaveformView));
+    public static readonly RoutedUICommand ZoomStartCommand = new("Amplia l'inici", "ZoomStart", typeof(WaveformView));
+    public static readonly RoutedUICommand ZoomEndCommand = new("Amplia el final", "ZoomEnd", typeof(WaveformView));
+
+    private double _viewStart, _viewLength; // tros visible (segons); _viewLength 0 = tot
+    private double _panFromX, _panFromStart;
+    private bool _panning;
     private static readonly ConcurrentDictionary<string, (float[] Peaks, double Duration)> Cache = new();
 
     private static readonly Brush Background = Freeze(new SolidColorBrush(Color.FromRgb(0x15, 0x16, 0x1A)));
@@ -99,7 +116,180 @@ public sealed class WaveformView : FrameworkElement
     public WaveformView()
     {
         Cursor = Cursors.IBeam;
-        ToolTip = "Arrossega els marcadors: verd = inici, vermell = final.\nClic dret: posa el final aquí. Doble clic: tot el fitxer.";
+        Focusable = false;
+        ToolTip = Escena.L.T("Arrossega els marcadors: verd = inici, vermell = final.\nClic dret: posa el final aquí. Doble clic: tot el fitxer.\nRoda del ratolí: zoom. Maj+roda o botó del mig: desplaça.");
+        CommandBindings.Add(new CommandBinding(ZoomInCommand, (_, _) => ZoomBy(0.5, ViewStart + ViewLength / 2), (_, e) => e.CanExecute = _duration > 0));
+        CommandBindings.Add(new CommandBinding(ZoomOutCommand, (_, _) => ZoomBy(2, ViewStart + ViewLength / 2), (_, e) => e.CanExecute = IsZoomed));
+        CommandBindings.Add(new CommandBinding(ZoomAllCommand, (_, _) => ResetView(), (_, e) => e.CanExecute = IsZoomed));
+        CommandBindings.Add(new CommandBinding(ZoomStartCommand, (_, _) => ZoomAround(StartAt), (_, e) => e.CanExecute = _duration > 0));
+        CommandBindings.Add(new CommandBinding(ZoomEndCommand, (_, _) => ZoomAround(EffectiveEnd), (_, e) => e.CanExecute = _duration > 0));
+        Loaded += (_, _) => HookHorizontalWheel();
+        Unloaded += (_, _) => UnhookHorizontalWheel();
+    }
+
+    // ---- Zoom ----
+
+    /// <summary>Inici del tros visible (segons).</summary>
+    public double ViewStart => _viewLength > 0 ? _viewStart : 0;
+
+    /// <summary>Durada del tros visible (segons).</summary>
+    public double ViewLength => _viewLength > 0 ? _viewLength : _duration;
+
+    public bool IsZoomed => _viewLength > 0 && _viewLength < _duration - 1e-6;
+
+    private void SetView(double start, double length)
+    {
+        if (_duration <= 0) return;
+        length = Math.Clamp(length, Math.Min(MinView, _duration), _duration);
+        start = Math.Clamp(start, 0, _duration - length);
+        if (length >= _duration - 1e-6)
+        {
+            start = 0;
+            length = 0;
+        }
+        _viewStart = start;
+        _viewLength = length;
+        InvalidateVisual();
+        CommandManager.InvalidateRequerySuggested();
+        PublishScroll();
+    }
+
+    // ---- Barra de desplaçament (es lliga des del XAML amb ElementName) ----
+
+    private bool _publishing;
+
+    private static readonly DependencyPropertyKey ScrollMaxKey = DependencyProperty.RegisterReadOnly(
+        nameof(ScrollMax), typeof(double), typeof(WaveformView), new PropertyMetadata(0.0));
+    public static readonly DependencyProperty ScrollMaxProperty = ScrollMaxKey.DependencyProperty;
+
+    private static readonly DependencyPropertyKey ScrollViewportKey = DependencyProperty.RegisterReadOnly(
+        nameof(ScrollViewport), typeof(double), typeof(WaveformView), new PropertyMetadata(1.0));
+    public static readonly DependencyProperty ScrollViewportProperty = ScrollViewportKey.DependencyProperty;
+
+    private static readonly DependencyPropertyKey IsZoomedKey = DependencyProperty.RegisterReadOnly(
+        nameof(IsZoomedView), typeof(bool), typeof(WaveformView), new PropertyMetadata(false));
+    public static readonly DependencyProperty IsZoomedViewProperty = IsZoomedKey.DependencyProperty;
+
+    public static readonly DependencyProperty ScrollOffsetProperty = DependencyProperty.Register(
+        nameof(ScrollOffset), typeof(double), typeof(WaveformView),
+        new FrameworkPropertyMetadata(0.0, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault,
+            (d, e) => ((WaveformView)d).OnScrollOffsetChanged((double)e.NewValue)));
+
+    /// <summary>Màxim de la barra: durada menys el tros visible (segons).</summary>
+    public double ScrollMax => (double)GetValue(ScrollMaxProperty);
+
+    /// <summary>Tros visible (segons), per a la mida del polze de la barra.</summary>
+    public double ScrollViewport => (double)GetValue(ScrollViewportProperty);
+
+    /// <summary>Hi ha zoom (la barra només es mostra llavors).</summary>
+    public bool IsZoomedView => (bool)GetValue(IsZoomedViewProperty);
+
+    /// <summary>Inici del tros visible, lligat a la barra.</summary>
+    public double ScrollOffset { get => (double)GetValue(ScrollOffsetProperty); set => SetValue(ScrollOffsetProperty, value); }
+
+    private void PublishScroll()
+    {
+        _publishing = true;
+        try
+        {
+            SetValue(ScrollMaxKey, Math.Max(0, _duration - ViewLength));
+            SetValue(ScrollViewportKey, Math.Max(0.001, ViewLength));
+            SetValue(IsZoomedKey, IsZoomed);
+            ScrollOffset = ViewStart;
+        }
+        finally { _publishing = false; }
+    }
+
+    private void OnScrollOffsetChanged(double value)
+    {
+        if (_publishing || !IsZoomed) return;
+        SetView(value, ViewLength);
+    }
+
+    /// <summary>Desplaça la vista una fracció del tros visible (negatiu = cap a l'inici).</summary>
+    public void Pan(double fraction)
+    {
+        if (IsZoomed) SetView(ViewStart + fraction * ViewLength, ViewLength);
+    }
+
+    // ---- Desplaçament horitzontal del touchpad o de la roda inclinada (WM_MOUSEHWHEEL, que WPF no rep) ----
+
+    private const int WM_MOUSEHWHEEL = 0x020E;
+    private System.Windows.Interop.HwndSource? _hwnd;
+
+    private void HookHorizontalWheel()
+    {
+        UnhookHorizontalWheel();
+        _hwnd = PresentationSource.FromVisual(this) as System.Windows.Interop.HwndSource;
+        _hwnd?.AddHook(WndProc);
+    }
+
+    private void UnhookHorizontalWheel()
+    {
+        _hwnd?.RemoveHook(WndProc);
+        _hwnd = null;
+    }
+
+    private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+    {
+        if (msg == WM_MOUSEHWHEEL && IsMouseOver && IsZoomed)
+        {
+            int delta = (short)((wParam.ToInt64() >> 16) & 0xFFFF); // positiu = cap a la dreta
+            Pan(delta / 120.0 * 0.15);
+            handled = true;
+        }
+        return IntPtr.Zero;
+    }
+
+    /// <summary>Amplia (factor &lt; 1) o redueix (&gt; 1) mantenint <paramref name="anchor"/> al mateix lloc de la pantalla.</summary>
+    public void ZoomBy(double factor, double anchor)
+    {
+        if (_duration <= 0) return;
+        double len = ViewLength, start = ViewStart;
+        double frac = len > 0 ? (anchor - start) / len : 0.5;
+        double newLen = len * factor;
+        SetView(anchor - frac * Math.Clamp(newLen, MinView, _duration), newLen);
+    }
+
+    /// <summary>Amplia uns 2 segons al voltant d'un punt (per afinar l'inici o el final).</summary>
+    public void ZoomAround(double seconds)
+    {
+        double len = Math.Min(2, _duration);
+        SetView(seconds - len / 2, len);
+    }
+
+    public void ResetView() => SetView(0, _duration);
+
+    protected override void OnMouseWheel(MouseWheelEventArgs e)
+    {
+        if (_duration <= 0) return;
+        double steps = e.Delta / 120.0;
+        if (Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))
+            Pan(-steps * 0.15);
+        else
+            ZoomBy(Math.Pow(0.8, steps), SecondsAt(e.GetPosition(this).X, round: false));
+        e.Handled = true; // que no es desplaci el panell de propietats
+    }
+
+    protected override void OnMouseDown(MouseButtonEventArgs e)
+    {
+        base.OnMouseDown(e);
+        if (e.ChangedButton != MouseButton.Middle || !IsZoomed) return;
+        _panning = true;
+        _panFromX = e.GetPosition(this).X;
+        _panFromStart = ViewStart;
+        Cursor = Cursors.ScrollWE;
+        CaptureMouse();
+        e.Handled = true;
+    }
+
+    protected override void OnMouseUp(MouseButtonEventArgs e)
+    {
+        base.OnMouseUp(e);
+        if (e.ChangedButton != MouseButton.Middle || !_panning) return;
+        _panning = false;
+        Cursor = Cursors.IBeam;
+        ReleaseMouseCapture();
     }
 
     private static T Freeze<T>(T f) where T : Freezable { f.Freeze(); return f; }
@@ -110,6 +300,9 @@ public sealed class WaveformView : FrameworkElement
         _peaks = null;
         _error = null;
         _duration = 0;
+        _viewStart = _viewLength = 0;
+        PublishScroll();
+        CommandManager.InvalidateRequerySuggested();
         if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
         {
             _loading = false;
@@ -151,7 +344,9 @@ public sealed class WaveformView : FrameworkElement
         int channels = samples.WaveFormat.Channels;
         double duration = stream.TotalTime.TotalSeconds;
         double totalFrames = Math.Max(1, duration * samples.WaveFormat.SampleRate);
-        double framesPerBin = Math.Max(1, totalFrames / Bins);
+        int bins = (int)Math.Clamp(duration * BinsPerSecond, MinBins, MaxBins);
+        double framesPerBin = Math.Max(1, totalFrames / bins);
+        int Bins = bins;
 
         var peaks = new float[Bins];
         var buffer = new float[channels * 16384];
@@ -175,9 +370,29 @@ public sealed class WaveformView : FrameworkElement
 
     private double EffectiveEnd => EndAt > StartAt && EndAt < _duration ? EndAt : _duration;
 
-    private double XOf(double seconds) => _duration > 0 ? seconds / _duration * ActualWidth : 0;
+    private double XOf(double seconds) => ViewLength > 0 ? (seconds - ViewStart) / ViewLength * ActualWidth : 0;
 
-    private double SecondsAt(double x) => Math.Round(Math.Clamp(x / Math.Max(1, ActualWidth), 0, 1) * _duration, 2);
+    /// <summary>Temps al punt x. Amb zoom es pot afinar fins al mil·lisegon.</summary>
+    private double SecondsAt(double x, bool round = true)
+    {
+        double t = ViewStart + Math.Clamp(x / Math.Max(1, ActualWidth), 0, 1) * ViewLength;
+        return round ? Math.Round(t, ViewLength < 20 ? 3 : 2) : t;
+    }
+
+    private static readonly Brush OverviewBrush = Freeze(new SolidColorBrush(Color.FromArgb(0x60, 0x9B, 0xA0, 0xA8)));
+    private static readonly Brush OverviewViewBrush = Freeze(new SolidColorBrush(Color.FromRgb(0x5B, 0x9B, 0xF0)));
+
+    private void DrawLabel(DrawingContext dc, string text, double x, double y, bool alignRight)
+    {
+        var ft = new FormattedText(text, CultureInfo.CurrentUICulture, FlowDirection.LeftToRight,
+            new Typeface("Segoe UI"), 10, Brushes.White, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+        double left = alignRight ? x - ft.Width : x;
+        dc.DrawRectangle(Background, null, new Rect(left - 2, y, ft.Width + 4, ft.Height)); // que es llegeixi sobre l'ona
+        dc.DrawText(ft, new Point(left, y));
+    }
+
+    private static string FormatTime(double s, double span) =>
+        span < 20 ? TimeSpan.FromSeconds(s).ToString(@"m\:ss\.fff") : TimeSpan.FromSeconds(s).ToString(@"m\:ss\.f");
 
     protected override void OnRender(DrawingContext dc)
     {
@@ -198,10 +413,13 @@ public sealed class WaveformView : FrameworkElement
         {
             double mid = h / 2;
             int columns = Math.Max(1, (int)w);
+            // Només el tros visible: cada columna agafa el pic dels punts que hi caben.
+            double binsPerSec = _peaks.Length / _duration;
+            double firstBin = ViewStart * binsPerSec, binsVisible = ViewLength * binsPerSec;
             for (int x = 0; x < columns; x++)
             {
-                int b0 = x * _peaks.Length / columns;
-                int b1 = Math.Max(b0 + 1, (x + 1) * _peaks.Length / columns);
+                int b0 = (int)(firstBin + x * binsVisible / columns);
+                int b1 = Math.Max(b0 + 1, (int)(firstBin + (x + 1) * binsVisible / columns));
                 float peak = 0;
                 for (int b = b0; b < b1 && b < _peaks.Length; b++) peak = Math.Max(peak, _peaks[b]);
                 double half = Math.Max(0.5, peak * (mid - 2));
@@ -223,9 +441,10 @@ public sealed class WaveformView : FrameworkElement
             }
         }
 
+        dc.PushClip(new RectangleGeometry(new Rect(0, 0, w, h)));
         double xs = XOf(StartAt), xe = XOf(EffectiveEnd);
-        if (xs > 0) dc.DrawRectangle(Shade, null, new Rect(0, 0, xs, h));
-        if (xe < w) dc.DrawRectangle(Shade, null, new Rect(xe, 0, w - xe, h));
+        if (xs > 0) dc.DrawRectangle(Shade, null, new Rect(0, 0, Math.Min(xs, w), h));
+        if (xe < w) dc.DrawRectangle(Shade, null, new Rect(Math.Max(0, xe), 0, w - Math.Max(0, xe), h));
         dc.DrawLine(StartPen, new Point(xs, 0), new Point(xs, h));
         dc.DrawLine(EndPen, new Point(xe, 0), new Point(xe, h));
 
@@ -233,6 +452,16 @@ public sealed class WaveformView : FrameworkElement
         {
             double xp = XOf(StartAt + Elapsed);
             dc.DrawLine(HeadPen, new Point(xp, 0), new Point(xp, h));
+        }
+        dc.Pop();
+
+        if (IsZoomed)
+        {
+            // Temps dels extrems i, a baix, quin tros del fitxer es veu.
+            DrawLabel(dc, FormatTime(ViewStart, ViewLength), 3, 1, false);
+            DrawLabel(dc, FormatTime(ViewStart + ViewLength, ViewLength), w - 3, 1, true);
+            dc.DrawRectangle(OverviewBrush, null, new Rect(0, h - 3, w, 3));
+            dc.DrawRectangle(OverviewViewBrush, null, new Rect(ViewStart / _duration * w, h - 3, Math.Max(2, ViewLength / _duration * w), 3));
         }
     }
 
@@ -255,7 +484,20 @@ public sealed class WaveformView : FrameworkElement
 
     protected override void OnMouseMove(MouseEventArgs e)
     {
-        if (_dragMarker != 0 && IsMouseCaptured) MoveMarker(e.GetPosition(this).X);
+        if (_panning && IsMouseCaptured)
+        {
+            double dx = e.GetPosition(this).X - _panFromX;
+            SetView(_panFromStart - dx / Math.Max(1, ActualWidth) * ViewLength, ViewLength);
+            return;
+        }
+        if (_dragMarker != 0 && IsMouseCaptured)
+        {
+            double x = e.GetPosition(this).X;
+            // Arrossegant un marcador fins a la vora, la vista es desplaça.
+            if (IsZoomed && (x < 0 || x > ActualWidth))
+                SetView(ViewStart + (x < 0 ? -1 : 1) * ViewLength * 0.05, ViewLength);
+            MoveMarker(x);
+        }
     }
 
     protected override void OnMouseLeftButtonUp(MouseButtonEventArgs e)
@@ -278,12 +520,12 @@ public sealed class WaveformView : FrameworkElement
         double t = SecondsAt(x);
         if (_dragMarker == 1)
         {
-            StartAt = Math.Min(t, EffectiveEnd - 0.05);
+            StartAt = Math.Min(t, EffectiveEnd - 0.01);
         }
         else if (_dragMarker == 2)
         {
-            t = Math.Max(t, StartAt + 0.05);
-            EndAt = t >= _duration - 0.01 ? 0 : t; // al final de tot = «fins al final»
+            t = Math.Max(t, StartAt + 0.01);
+            EndAt = t >= _duration - 0.001 ? 0 : t; // al final de tot = «fins al final»
         }
     }
 }

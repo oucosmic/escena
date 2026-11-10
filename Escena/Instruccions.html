@@ -82,7 +82,7 @@ pre{background:var(--code);border:1px solid var(--line);padding:12px 14px;border
 <div class="layout">
 <nav>
   <div class="brand"><span class="logo">▶</span>Escena</div>
-  <div class="ver">Versió 0.6 · Instruccions</div>
+  <div class="ver">Versió 0.7 · Instruccions</div>
   <input id="q" type="search" placeholder="Cerca…" aria-label="Cerca a les instruccions">
   <ul id="toc">
     <li><a href="#inici">Per començar</a></li>
@@ -132,13 +132,13 @@ pre{background:var(--code);border:1px solid var(--line);padding:12px 14px;border
 <section id="cues">
   <h2>Tipus de cue</h2>
   <div class="cards">
-    <div class="card"><h4>🔊 Àudio</h4><p>WAV, MP3, FLAC, AIFF, M4A, WMA. Volum en dB, panorama, inici i final (arrossegables sobre la forma d'ona), bucle, foses amb corba i bucles dins del fitxer.</p></div>
+    <div class="card"><h4>🔊 Àudio</h4><p>WAV, MP3, FLAC, AIFF, M4A, WMA. Volum en dB, panorama, inici i final (arrossegables sobre la forma d'ona, amb <b>zoom</b>: roda del ratolí, Maj+roda o botó del mig per desplaçar-se, i els botons «▏Inici» i «Final▕» per afinar fins al mil·lisegon), bucle, foses amb corba i bucles dins del fitxer.</p></div>
     <div class="card"><h4>🎬 Vídeo</h4><p>MP4, MOV, MKV, AVI, WMV, WebM, MPG… Volum, inici i final, bucle, fosa des de negre i a negre. En acabar torna a negre.</p></div>
     <div class="card"><h4>🖼 Imatge</h4><p>JPG, PNG, BMP, GIF, TIFF amb foses. Temps en pantalla, o 0 perquè es quedi fins que l'aturis.</p></div>
     <div class="card"><h4>🔤 Text</h4><p>Títols, rètols i sobretítols: mida, color, posició (dalt, mig, baix), franja fosca, temps i foses. «Treu els altres textos» substitueix l'anterior.</p></div>
     <div class="card"><h4>🎤 Micròfon</h4><p>Entrada en directe cap a les sortides, amb volum, panorama, foses, matriu, enviaments i ducking. Sona fins que l'atures.</p></div>
     <div class="card"><h4>↘ Fosa</h4><p>Porta una cue a un volum i/o panorama en X segons, amb corba. Opcionalment l'atura. En vídeo i imatge també enfosqueix.</p></div>
-    <div class="card"><h4>■ Atura · Pausa · Reprèn · Surt del bucle</h4><p>Sobre una cue destí o sobre totes les que sonen. En aturar, fosa de cada cue o una de fixa.</p></div>
+    <div class="card"><h4>■ Atura · Pausa · Reprèn · Surt del bucle</h4><p>Sobre una cue destí o sobre totes les que sonen. Si en crear-la hi ha una cue seleccionada, actua sobre aquella (si és una fosa, sobre la cue de la fosa). En aturar, fosa de cada cue o una de fixa.</p></div>
     <div class="card"><h4>⏱ Espera</h4><p>Una pausa cronometrada. Amb «Segueix» fa seqüències automàtiques.</p></div>
     <div class="card"><h4>📁 Grup</h4><p>Conté altres cues, sagnades a sota. Cinc modes. <a href="#grups">Vegeu Grups</a>.</p></div>
   </div>
@@ -339,6 +339,7 @@ pre{background:var(--code);border:1px solid var(--line);padding:12px 14px;border
     <tr><td>Còpia de seguretat cada</td><td>30 s</td><td>a l'espectacle</td></tr>
     <tr><td>Sortida per escoltar cues</td><td>la mateixa que la cue</td><td>a l'ordinador</td></tr>
     <tr><td>Idioma</td><td>català (també anglès)</td><td>a l'ordinador · s'aplica en tornar a obrir</td></tr>
+    <tr><td>No deixis dormir l'ordinador ni apagar la pantalla</td><td>activat</td><td>a l'ordinador</td></tr>
   </table>
 </section>
 

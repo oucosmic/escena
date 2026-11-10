@@ -29,6 +29,8 @@ public partial class MainWindow : Window
                 CueGrid.ScrollIntoView(_show.StandbyCue); // l'operador sempre veu la cue en espera
         };
         Loaded += OnLoaded;
+        // Que Windows no adormi l'ordinador ni apagui la pantalla mentre hi ha un espectacle obert.
+        PowerGuard.Apply(_show.MachineSettings.KeepAwake);
     }
 
     private void OnLoaded(object sender, RoutedEventArgs e)
@@ -587,8 +589,25 @@ public partial class MainWindow : Window
 
     private const string DefaultControlName = "Atura-ho tot";
 
-    private void AddControl_Click(object sender, RoutedEventArgs e) =>
-        _show.InsertCue(new ControlCue { Name = DefaultControlName, AllCues = true });
+    /// <summary>
+    /// Atura/Pausa nova: si hi ha una cue seleccionada, actua sobre aquella (en una fosa, sobre la cue de la fosa);
+    /// sense cap cue seleccionada, sobre totes.
+    /// </summary>
+    private void AddControl_Click(object sender, RoutedEventArgs e)
+    {
+        var target = _show.SelectedCue switch
+        {
+            null or ControlCue => null,
+            FadeCue f when f.TargetId is Guid t => _show.Cues.FirstOrDefault(c => c.Id == t),
+            FadeCue => null,
+            var c => c,
+        };
+        var control = target == null
+            ? new ControlCue { Name = DefaultControlName, AllCues = true }
+            : new ControlCue { AllCues = false, TargetId = target.Id };
+        if (target != null) control.Name = $"{control.TypeName} «{target.Name}»";
+        _show.InsertCue(control);
+    }
 
     /// <summary>En triar una cue destí, la cue de control passa a actuar només sobre aquella.</summary>
     private void ControlTarget_DropDownClosed(object? sender, EventArgs e)

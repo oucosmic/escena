@@ -1,4 +1,4 @@
-# Escena 0.6 — reproductor de cues per a Windows
+# Escena 0.7 — reproductor de cues per a Windows
 
 Programa nou per a Windows inspirat en Linux Show Player. Reprodueix àudio, vídeo i imatges. No té llums ni MIDI. Programari lliure (GPL-3.0), fet amb l'ajuda d'IA (vegeu [README.md](README.md)).
 
@@ -8,17 +8,17 @@ Programa nou per a Windows inspirat en Linux Show Player. Reprodueix àudio, ví
 |---|---|
 | `Escena-Windows\` | El programa compilat (no és al repositori: es baixa de les versions publicades). `Escena.exe`, la carpeta `libvlc` (el VLC per al vídeo), les instruccions en HTML i la llicència. No cal instal·lar res, però **per moure'l a un altre ordinador cal copiar la carpeta sencera**. |
 | `Escena\` | El codi font (C# / WPF / .NET 8 + NAudio + LibVLCSharp). |
-| `Demo\Demo.show` | Espectacle d'exemple amb tons, una imatge i un vídeo de prova. El vídeo no s'inclou al repositori: posa-hi qualsevol vídeo amb el nom `video-prova.mp4`. |
+| `Demo\Demo.show` | Espectacle d'exemple amb tons, una imatge i un vídeo. El vídeo no s'inclou al repositori: posa-hi qualsevol vídeo curt amb el nom `hipopotam_en_moviment.mp4`. |
 
 ## Tipus de cue
 
 | Cue | Què fa |
 |---|---|
-| **Àudio** | Reprodueix WAV, MP3, FLAC, AIFF, M4A o WMA. Té volum (dB), panorama, inici i final dins del fitxer (es poden arrossegar sobre la forma d'ona), bucle, fosa d'entrada i de sortida amb corba, i **bucles dins del fitxer** (vegeu més avall). |
+| **Àudio** | Reprodueix WAV, MP3, FLAC, AIFF, M4A o WMA. Té volum (dB), panorama, inici i final dins del fitxer (es poden arrossegar sobre la forma d'ona, que té **zoom**: roda del ratolí al voltant del punter; per desplaçar-se, la barra que surt a sota amb el zoom, el lliscament horitzontal del touchpad o la roda inclinada, Maj+roda o el botó del mig; i els botons 🔍+ 🔍− «Tot», «▏Inici» i «Final▕» per ampliar al voltant de cada punt i afinar-lo fins al mil·lisegon), bucle, fosa d'entrada i de sortida amb corba, i **bucles dins del fitxer** (vegeu més avall). |
 | **Vídeo** | Reprodueix MP4, MOV, MKV, AVI, WMV, WebM, MPG… amb el VLC. Té volum del so, inici i final, bucle, i fosa des de negre i a negre amb corba. En acabar, la pantalla torna a negre. |
 | **Imatge** | Mostra JPG, PNG, BMP, GIF o TIFF a la pantalla, amb fosa des de negre i a negre. Té un temps en pantalla, o 0 perquè es quedi fins que l'aturis. |
 | **Fosa** | Porta una cue a un **volum i/o un panorama** en X segons, amb corba. Si vols, en acabar l'atura. En vídeos i imatges també enfosqueix la imatge (es pot desactivar per fer només el so). |
-| **Atura / Pausa / Reprèn / Surt del bucle** | Actua sobre una cue concreta o sobre totes. En triar una **cue destí** actua només sobre aquella (la casella «Totes» es desmarca sola); si marques «Totes», actua sobre totes les que estan en marxa. En aturar pot fer servir la fosa de cada cue o una fosa fixa. |
+| **Atura / Pausa / Reprèn / Surt del bucle** | Actua sobre una cue concreta o sobre totes. **Si en crear-la hi ha una cue seleccionada, actua sobre aquella** (si és una fosa, sobre la cue de la fosa); sense cap cue seleccionada, sobre totes. En triar una **cue destí** actua només sobre aquella (la casella «Totes» es desmarca sola); si marques «Totes», actua sobre totes les que estan en marxa. En aturar pot fer servir la fosa de cada cue o una fosa fixa. |
 | **Text** | Títols, rètols i sobretítols a la pantalla: mida, color, posició (dalt, mig, baix), franja fosca darrere, temps en pantalla i foses. Amb «Treu els altres textos» cada text nou substitueix l'anterior. |
 | **Micròfon** | Entrada en directe (micròfon o línia) cap a les sortides, amb volum, panorama, foses, matriu, enviaments i ducking. Sona fins que l'atures. |
 | **Espera** | Una pausa cronometrada. Combinada amb «Segueix», serveix per fer seqüències automàtiques. |
@@ -156,6 +156,9 @@ Amb el botó **🎧 Escolta** d'una cue d'àudio (o la tecla **E**) l'escoltes s
 | Còpia de seguretat cada | 30 s | a l'espectacle |
 | Sortida per escoltar cues | la mateixa que la cue | a l'ordinador |
 | Idioma | català | a l'ordinador |
+| No deixis dormir l'ordinador ni apagar la pantalla | activat | a l'ordinador |
+
+**Ordinador despert:** mentre Escena és obert, Windows no adorm ni hiberna l'ordinador, no apaga la pantalla i no posa l'estalvi de pantalla, encara que no s'hagi disparat cap cue. Així el projector continua rebent el negre mentre s'espera el primer GO. Es desactiva a ⚙ Ajustos, i Windows ho desfà sol en tancar Escena. Tancar la tapa del portàtil sí que l'adorm (es canvia a les opcions d'energia de Windows).
 
 ## Pantalles (vídeo i imatges)
 
@@ -189,6 +192,8 @@ Es desen com a fitxers `.show` (JSON). Les rutes dels sons es guarden **relative
 - Versió 0.5: 8 matriu de sortides i enviaments · 9 modes de grup · 10 començar des d'un temps · 11 tecles per a cues · 12 cue de micròfon · 13 ducking · 15 comprovació abans de la funció · 16 empaquetar · 17 registre d'assaig · 18 vista de regidor · 19 traduccions (català i anglès) · vídeo avançat: diverses pantalles, correcció del projector, cues de text i sobretítols.
 
 - Versió 0.6: exportació al QLab · so del vídeo per qualsevol sortida · copiar i enganxar cues · editar diverses cues alhora (vegeu [CHANGELOG.md](CHANGELOG.md)).
+
+- Versió 0.7: zoom a la forma d'ona · ordinador despert mentre Escena és obert · Atura/Pausa sobre la cue seleccionada.
 
 **Encara no provat amb aparells reals:** targetes multicanal i ASIO, micròfon en directe (latència i acoblament), projector de veritat amb la correcció.
 

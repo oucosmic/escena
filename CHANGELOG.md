@@ -3,6 +3,13 @@
 Numeració: MAJOR.MENOR.CORRECCIÓ. Mentre el primer número sigui 0, Escena encara és en desenvolupament.
 La versió del format dels fitxers `.show` va a part (ara és la 5) i només canvia quan canvia com es desen els espectacles.
 
+## 0.7.0 — 2026-11-11
+
+- **Zoom a la forma d'ona:** roda del ratolí al voltant del punter, Maj+roda o botó del mig per desplaçar-se, i els botons 🔍+ 🔍− «Tot», «▏Inici» i «Final▕» per afinar l'inici i el final fins al mil·lisegon (els camps d'inici i final ara tenen tres decimals).
+- **Ordinador despert:** mentre Escena és obert, Windows no adorm l'ordinador ni apaga la pantalla, perquè el projector no perdi el senyal mentre s'espera el primer GO. Es pot desactivar a ⚙ Ajustos.
+- **Atura/Pausa nova:** si en crear-la hi ha una cue seleccionada, actua sobre aquella (si és una fosa, sobre la cue de la fosa); sense cap cue seleccionada, sobre totes.
+- Espectacle d'exemple actualitzat al format actual (amb un grup).
+
 ## 0.6.0 — 2026-11-10
 
 - **Exporta al QLab (Mac):** crea una carpeta amb els fitxers, un AppleScript que fa les cues al QLab 5 i un informe del que cal acabar a mà.
