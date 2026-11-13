@@ -191,7 +191,7 @@ public sealed partial class ShowController : ObservableObject, IDisposable
     }
 
     public string Title =>
-        $"{(FilePath is null ? "Sense títol" : Path.GetFileNameWithoutExtension(FilePath))}{(IsDirty ? " *" : "")} — Escena {AppVersion}";
+        $"{(FilePath is null ? "Sense títol" : Path.GetFileNameWithoutExtension(FilePath))}{(IsDirty ? " *" : "")} — Escena {AppVersion}{(IsShowMode ? " — MODE FUNCIÓ" : "")}";
 
     /// <summary>Versió del programa («0.6.0»), la del projecte.</summary>
     public static string AppVersion { get; } =

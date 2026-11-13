@@ -91,6 +91,16 @@ Les vistes:
 - **Llista** (F5).
 - **Botonera** (F6): una graella de botons. **Un clic dispara la cue**, i si ja sona, l'atura. **Amb el botó dret se selecciona** per editar-la. La vora verda marca la cue en espera. El color indica l'estat: verd sona, groc pre-espera, taronja s'està aturant, blau-gris en pausa, vermell error.
 
+## Mode funció (F9)
+
+El botó del cadenat de la barra, o **F9**, bloqueja l'espectacle per fer la funció. Torna a prémer per editar.
+
+- **Què s'amaga:** els botons d'afegir, moure i esborrar, el panell de propietats, la comprovació, les eines, els ajustos i les sortides.
+- **Què no es pot fer:** esborrar, moure, enganxar, duplicar, agrupar, desfer, arrossegar cues ni deixar-hi fitxers, ni obrir un altre espectacle. Desar (Ctrl+S) sí.
+- **Què es veu en gran, a la dreta:** la cue en espera amb les seves notes, la que vindrà després, les cues en marxa amb el compte enrere i l'hora.
+- **Què continua igual:** GO, Esc, pànic, pausa, tecles directes, botonera, triar la cue en espera (↑↓, Retorn, doble clic) i els botons del panell «En curs».
+- Tancar Escena en mode funció demana confirmació. El mode no es desa: Escena sempre s'obre en mode edició.
+
 ## Controls en directe
 
 | Tecla / botó | Acció |

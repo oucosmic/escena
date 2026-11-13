@@ -236,7 +236,7 @@ public sealed partial class ShowController
     public static readonly HashSet<string> ReservedKeys = new(StringComparer.OrdinalIgnoreCase)
     {
         "Space", "Escape", "Shift+Escape", "P", "E", "Enter", "Up", "Down", "Shift+Up", "Shift+Down", "Delete",
-        "F5", "F6", "F11", "Tab", "Ctrl+N", "Ctrl+O", "Ctrl+S", "Ctrl+Up", "Ctrl+Down", "Ctrl+Shift+S", "Ctrl+G",
+        "F5", "F6", "F9", "F11", "Tab", "Ctrl+N", "Ctrl+O", "Ctrl+S", "Ctrl+Up", "Ctrl+Down", "Ctrl+Shift+S", "Ctrl+G",
         "Ctrl+C", "Ctrl+X", "Ctrl+V", "Ctrl+D", "Ctrl+Z", "Ctrl+Y", "Ctrl+Shift+Z",
     };
 
@@ -308,6 +308,7 @@ public sealed partial class ShowController
             var c => TimeFormat.Format(c.Elapsed),
         };
         StageClock = DateTime.Now.ToString("HH:mm:ss");
+        UpdateAfterStandby();
     }
 
     // ================= Empaquetar =================

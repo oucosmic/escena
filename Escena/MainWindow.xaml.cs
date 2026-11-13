@@ -478,6 +478,7 @@ public partial class MainWindow : Window
 
     private void TryStartDrag(DependencyObject source, MouseEventArgs e)
     {
+        if (_show.IsShowMode) return; // en mode funció no es reordena res
         if (_dragCandidate == null || e.LeftButton != MouseButtonState.Pressed) return;
         var delta = e.GetPosition(this) - _dragStart;
         if (Math.Abs(delta.X) < SystemParameters.MinimumHorizontalDragDistance * 2 &&
@@ -854,6 +855,12 @@ public partial class MainWindow : Window
 
     private void Cues_DragOver(object sender, DragEventArgs e)
     {
+        if (_show.IsShowMode)
+        {
+            e.Effects = DragDropEffects.None; // ni reordenar ni deixar-hi fitxers
+            e.Handled = true;
+            return;
+        }
         if (e.Data.GetDataPresent(CueDragFormat))
         {
             var (_, position, marker) = GetDropTarget(e);
@@ -869,6 +876,7 @@ public partial class MainWindow : Window
 
     private void Cues_Drop(object sender, DragEventArgs e)
     {
+        if (_show.IsShowMode) return;
         if (e.Data.GetData(CueDragFormat) is Cue dragged)
         {
             var (anchor, dropAt, _) = GetDropTarget(e);
@@ -929,6 +937,26 @@ public partial class MainWindow : Window
             CaptureHotkey(hotkeyBox, key, mods);
             e.Handled = true;
             return;
+        }
+
+        if (key == Key.F9 && mods == ModifierKeys.None)
+        {
+            if (!e.IsRepeat) ToggleShowMode();
+            e.Handled = true;
+            return;
+        }
+        // Mode funció: les dreceres d'edició no fan res (desar sí; el pànic i la resta de la funció van més avall).
+        if (_show.IsShowMode)
+        {
+            bool editing = mods == ModifierKeys.Control && key is not Key.S
+                           || mods == (ModifierKeys.Control | ModifierKeys.Shift)
+                           || mods == ModifierKeys.None && key == Key.Delete;
+            if (editing)
+            {
+                if (!e.IsRepeat) _show.Status = "Mode funció: l'edició està bloquejada. F9 per tornar a editar.";
+                e.Handled = true;
+                return;
+            }
         }
 
         if (mods == ModifierKeys.Control)
@@ -1085,8 +1113,10 @@ public partial class MainWindow : Window
     private void Window_Closing(object? sender, CancelEventArgs e)
     {
         // A mitja funció, tancar per error (Alt+F4, la creu) ho tallaria tot.
-        if (_show.ActiveCues.Count > 0 && MessageBox.Show(this,
-                $"Hi ha {_show.ActiveCues.Count} cue(s) en marxa. Si tanques Escena s'aturaran de cop.\n\nVols tancar igualment?",
+        if ((_show.ActiveCues.Count > 0 || _show.IsShowMode) && MessageBox.Show(this,
+                (_show.ActiveCues.Count > 0
+                    ? $"Hi ha {_show.ActiveCues.Count} cue(s) en marxa. Si tanques Escena s'aturaran de cop."
+                    : "Escena està en mode funció.") + "\n\nVols tancar igualment?",
                 "Escena", MessageBoxButton.OKCancel, MessageBoxImage.Warning, MessageBoxResult.Cancel) != MessageBoxResult.OK)
         {
             e.Cancel = true;

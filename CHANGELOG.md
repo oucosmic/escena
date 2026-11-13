@@ -7,6 +7,7 @@ La versió del format dels fitxers `.show` va a part (ara és la 5) i només can
 
 Novetats:
 
+- **Mode funció** (F9 o el cadenat de la barra): bloqueja l'edició i mostra en gran la cue en espera amb les notes, la de després i les cues en marxa amb el compte enrere.
 - **Desfer i refer** (Ctrl+Z, Ctrl+Y o Ctrl+Maj+Z): afegir, esborrar, moure, agrupar, enganxar i canviar propietats, fins a 100 passos. No atura el que sona.
 - **Barra d'eines amb icones:** en passar-hi el punter surt el nom, què fa i la drecera. Els botons amb un + verd afegeixen una cue.
 - **Moure diverses cues alhora** amb Ctrl+↑↓ o arrossegant-les.

@@ -555,6 +555,9 @@
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
                     <Button Style="{StaticResource IconButton}" Content="&#xEA37;" Click="ListLayout_Click" ToolTip="Vista de llista (F5)"/>
                     <Button Style="{StaticResource IconButton}" Content="&#xF0E2;" Click="CartLayout_Click" ToolTip="Vista de botonera (F6)&#x0a;Un clic dispara la cue; si ja sona, l'atura."/>
+                    <Button Style="{StaticResource IconButton}" Content="&#xE72E;" Click="ShowMode_Click"
+                            ToolTip="Mode funció (F9)&#x0a;Bloqueja l'edició per fer la funció: no es pot esborrar, moure ni canviar res, i es veu en gran la cue en espera, les notes i el que sona. Torna a prémer per editar."/>
+                    <StackPanel Orientation="Horizontal" Visibility="{Binding IsEditMode, Converter={StaticResource BoolToVis}}">
                     <Rectangle Width="1" Fill="{StaticResource BorderBrush}" Margin="8,4"/>
                     <Button Style="{StaticResource IconButton}" Content="&#xE9D5;" Click="Check_Click" ToolTip="Comprova abans de la funció&#x0a;Fitxers que falten, sortides, cues buides, encadenaments…"/>
                     <Button Style="{StaticResource IconButton}" Content="&#xE90F;" Click="Tools_Click"
@@ -579,8 +582,24 @@
                             <Run Text="🔊"/> <Run Text="{Binding OutputSummary, Mode=OneWay}"/>
                         </TextBlock>
                     </Button>
+                    </StackPanel>
                 </StackPanel>
-                <WrapPanel>
+                <Grid>
+                <!-- Mode funció: en lloc dels botons d'edició, l'avís que l'espectacle està bloquejat -->
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="6,0"
+                            Visibility="{Binding IsShowMode, Converter={StaticResource BoolToVis}}">
+                    <Border Background="#8A5A00" CornerRadius="4" Padding="10,4" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE72E;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14"
+                                       Foreground="White" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <TextBlock Text="MODE FUNCIÓ" FontWeight="Bold" Foreground="White" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+                    <TextBlock Text="L'edició està bloquejada: no es pot esborrar, moure ni canviar res." Margin="12,0"
+                               Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center"/>
+                    <Button Content="Torna a l'edició (F9)" Click="ShowMode_Click" Padding="10,4"/>
+                </StackPanel>
+                <WrapPanel Visibility="{Binding IsEditMode, Converter={StaticResource BoolToVis}}">
                     <!-- Icones (les de Windows); cada botó explica què fa en passar-hi el punter -->
                     <Button Style="{StaticResource IconButton}" Content="&#xE7C3;" Click="New_Click" ToolTip="Espectacle nou (Ctrl+N)"/>
                     <Button Style="{StaticResource IconButton}" Content="&#xE8E5;" Click="Open_Click" ToolTip="Obre un espectacle (Ctrl+O)"/>
@@ -615,6 +634,7 @@
                     <Button Style="{StaticResource IconButton}" Content="&#xE70D;" Click="MoveDown_Click" ToolTip="Baixa les cues seleccionades (Ctrl+↓)"/>
                     <Button Style="{StaticResource IconButton}" Content="&#xE74D;" Click="Delete_Click" ToolTip="Elimina les cues seleccionades (Supr)&#x0a;Es pot desfer amb Ctrl+Z."/>
                 </WrapPanel>
+                </Grid>
             </DockPanel>
         </Border>
 
@@ -668,7 +688,8 @@
                       CanUserSortColumns="False" CanUserReorderColumns="False" CanUserResizeRows="False"
                       AllowDrop="True" DragOver="Cues_DragOver" Drop="Cues_Drop" DragLeave="Cues_DragLeave"
                       PreviewMouseLeftButtonDown="CueGrid_PreviewMouseDown" PreviewMouseLeftButtonUp="CueGrid_PreviewMouseUp" PreviewMouseMove="CueGrid_PreviewMouseMove"
-                      MouseDoubleClick="CueGrid_DoubleClick" SelectionChanged="CueGrid_SelectionChanged">
+                      MouseDoubleClick="CueGrid_DoubleClick" SelectionChanged="CueGrid_SelectionChanged"
+                      ContextMenuOpening="CueGrid_ContextMenuOpening">
                 <DataGrid.ContextMenu>
                     <ContextMenu>
                         <MenuItem Header="Copia" InputGestureText="Ctrl+C" Click="CopyCues_Click"/>
@@ -874,6 +895,49 @@
                 <!-- Diverses cues seleccionades: propietats comunes (es construeix en codi) -->
                 <ScrollViewer x:Name="BulkScroll" VerticalScrollBarVisibility="Auto" Focusable="False" Visibility="Collapsed">
                     <StackPanel x:Name="BulkPanel" Margin="14,12"/>
+                </ScrollViewer>
+                <!-- Mode funció: res per editar; en gran, el que cal per fer la funció -->
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False"
+                              Visibility="{Binding IsShowMode, Converter={StaticResource BoolToVis}}">
+                    <StackPanel Margin="16,14">
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Right" Text="{Binding StageClock}" FontFamily="Consolas" FontSize="22"
+                                       Foreground="{StaticResource MutedBrush}"/>
+                            <TextBlock Text="EN ESPERA (GO)" Style="{StaticResource SectionHeader}" VerticalAlignment="Bottom"/>
+                        </DockPanel>
+                        <TextBlock Text="{Binding StandbyCue.DisplayName, FallbackValue='— final de la llista —', TargetNullValue='— final de la llista —'}"
+                                   FontSize="30" FontWeight="SemiBold" Foreground="#7BE495" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                        <TextBlock Text="{Binding StandbyCue.TypeName}" Foreground="{StaticResource MutedBrush}" FontSize="14"/>
+                        <TextBlock Text="{Binding StandbyCue.Notes}" FontSize="20" TextWrapping="Wrap" Foreground="#F0B429" Margin="0,10,0,0"/>
+
+                        <TextBlock Text="DESPRÉS" Style="{StaticResource SectionHeader}" Margin="0,22,0,0"/>
+                        <TextBlock Text="{Binding AfterStandby}" FontSize="18" TextWrapping="Wrap" Foreground="#D8DCE2"/>
+
+                        <TextBlock Text="EN CURS" Style="{StaticResource SectionHeader}" Margin="0,22,0,4"/>
+                        <TextBlock Text="No sona res." Foreground="{StaticResource MutedBrush}" FontSize="16">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ActiveCues.Count}" Value="0">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <ItemsControl ItemsSource="{Binding ActiveCues}" Focusable="False">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Margin="0,0,0,12">
+                                        <TextBlock Text="{Binding DisplayName}" FontSize="18" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="{Binding StatusText}" FontFamily="Consolas" FontSize="24" Foreground="#7BE495"/>
+                                        <ProgressBar Value="{Binding Progress, Mode=OneWay}" Maximum="100" Height="8" Margin="0,3,0,0"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
                 </ScrollViewer>
                 <ScrollViewer x:Name="SingleScroll" VerticalScrollBarVisibility="Auto" Focusable="False">
                     <StackPanel Margin="14,12">

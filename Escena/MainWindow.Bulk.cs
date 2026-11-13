@@ -13,6 +13,26 @@ public partial class MainWindow
 
     private void CueGrid_SelectionChanged(object sender, SelectionChangedEventArgs e) => QueueBulkRefresh();
 
+    // ---------------- Mode funció ----------------
+
+    private void ShowMode_Click(object sender, RoutedEventArgs e) => ToggleShowMode();
+
+    /// <summary>Entra o surt del mode funció (F9): bloqueja l'edició i mostra el panell gran.</summary>
+    private void ToggleShowMode()
+    {
+        // Un camp a mig escriure es confirma abans de bloquejar.
+        if (Keyboard.FocusedElement is TextBox box) box.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
+        _show.IsShowMode = !_show.IsShowMode;
+        FocusCues();
+        RefreshBulkPanel();
+    }
+
+    /// <summary>El menú del botó dret de la llista és tot d'edició: en mode funció no s'obre.</summary>
+    private void CueGrid_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+    {
+        if (_show.IsShowMode) e.Handled = true;
+    }
+
     /// <summary>Refà el panell un sol cop encara que la selecció canviï moltes vegades seguides.</summary>
     private void QueueBulkRefresh()
     {
@@ -32,6 +52,13 @@ public partial class MainWindow
 
     private void RefreshBulkPanel()
     {
+        // En mode funció no hi ha propietats: el seu lloc l'ocupa el panell gran de la funció.
+        if (_show.IsShowMode)
+        {
+            BulkScroll.Visibility = SingleScroll.Visibility = Visibility.Collapsed;
+            BulkPanel.Children.Clear();
+            return;
+        }
         var cues = BulkSelection();
         bool bulk = cues.Count > 1;
         BulkScroll.Visibility = bulk ? Visibility.Visible : Visibility.Collapsed;
