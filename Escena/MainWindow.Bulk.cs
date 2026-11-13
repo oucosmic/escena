@@ -23,6 +23,7 @@ public partial class MainWindow
         // Un camp a mig escriure es confirma abans de bloquejar.
         if (Keyboard.FocusedElement is TextBox box) box.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
         _show.IsShowMode = !_show.IsShowMode;
+        ApplyModeLayout();
         FocusCues();
         RefreshBulkPanel();
     }
@@ -57,6 +58,7 @@ public partial class MainWindow
         {
             BulkScroll.Visibility = SingleScroll.Visibility = Visibility.Collapsed;
             BulkPanel.Children.Clear();
+            RefreshInspector();
             return;
         }
         var cues = BulkSelection();
@@ -64,13 +66,20 @@ public partial class MainWindow
         BulkScroll.Visibility = bulk ? Visibility.Visible : Visibility.Collapsed;
         SingleScroll.Visibility = bulk ? Visibility.Collapsed : Visibility.Visible;
         BulkPanel.Children.Clear();
+        InspectorCaption.Text = bulk ? L.T("PROPIETATS") + " · " + cues.Count + " " + L.T("CUES") : L.T("PROPIETATS");
+        RefreshInspector();
         if (!bulk) return;
 
-        var p = BulkPanel;
-        p.Children.Add(Ui.Header(L.T("PROPIETATS") + " · " + cues.Count + " " + L.T("CUES")));
+        var top = BulkPanel;
         var kinds = cues.GroupBy(c => c.TypeName).Select(g => $"{g.Count()} × {g.Key}");
-        p.Children.Add(Ui.Note(string.Join(" · ", kinds)));
-        p.Children.Add(Ui.Note(L.T("Només surten les propietats que tenen totes. Els camps en blanc tenen valors diferents a cada cue; el que hi posis s'aplica a totes.")));
+        top.Children.Add(Ui.Note(string.Join(" · ", kinds) + "  —  " +
+            L.T("Només surten les propietats que tenen totes. Els camps en blanc tenen valors diferents a cada cue; el que hi posis s'aplica a totes.")));
+
+        // Els camps es posen de costat i salten de fila quan no hi caben.
+        var wrap = new WrapPanel();
+        top.Children.Add(wrap);
+        var p = new StackPanel { Width = 300, Margin = new Thickness(0, 0, 24, 6) };
+        wrap.Children.Add(p);
 
         // Numerar
         p.Children.Add(Ui.Label(L.T("Numera per ordre de llista (inici i pas)")));
@@ -94,8 +103,14 @@ public partial class MainWindow
         p.Children.Add(row);
 
         var fields = BulkEdit.FieldsFor(cues, _show.Outputs, _show.VideoAudioChoices);
-        foreach (var field in fields) p.Children.Add(BuildBulkField(field));
-        if (fields.Count == 0) p.Children.Add(Ui.Note(L.T("Aquestes cues no tenen cap altra propietat en comú.")));
+        foreach (var field in fields)
+        {
+            var cell = BuildBulkField(field);
+            cell.Width = 300;
+            cell.Margin = new Thickness(0, 0, 24, 6);
+            wrap.Children.Add(cell);
+        }
+        if (fields.Count == 0) top.Children.Add(Ui.Note(L.T("Aquestes cues no tenen cap altra propietat en comú.")));
     }
 
     private static string FirstNumber(List<Cue> cues)

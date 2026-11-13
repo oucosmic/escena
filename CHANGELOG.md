@@ -8,6 +8,8 @@ La versió del format dels fitxers `.show` va a part (ara és la 5) i només can
 Novetats:
 
 - **Mode funció** (F9 o el cadenat de la barra): bloqueja l'edició i mostra en gran la cue en espera amb les notes, la de després i les cues en marxa amb el compte enrere.
+- **Inspector a sota de la llista, amb pestanyes:** «General» i les de cada tipus de cue («Fitxer i temps», «Nivells i foses», «Sortides»…). La forma d'ona ocupa tot l'ample. Ctrl+Tab canvia de pestanya; l'alçada es pot arrossegar i es recorda. En mode funció l'inspector s'amaga i la llista guanya alçada.
+- **Icona i color de cada tipus de cue** a la llista, a la botonera i a l'inspector.
 - **Desfer i refer** (Ctrl+Z, Ctrl+Y o Ctrl+Maj+Z): afegir, esborrar, moure, agrupar, enganxar i canviar propietats, fins a 100 passos. No atura el que sona.
 - **Barra d'eines amb icones:** en passar-hi el punter surt el nom, què fa i la drecera. Els botons amb un + verd afegeixen una cue.
 - **Moure diverses cues alhora** amb Ctrl+↑↓ o arrossegant-les.

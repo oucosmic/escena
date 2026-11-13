@@ -28,6 +28,10 @@ Corbes de fosa: lineal, **exponencial** (passos iguals de dB, la que sona més �
 
 Cada cue té un **número lliure** («1», «1.5», «2A»…; les noves en reben un automàticament) i unes **notes per a l'operador**, que es veuen a la llista i a «En espera». Si dos números es repeteixen, surt un avís.
 
+**Propietats (inspector):** les propietats de la cue seleccionada són **a sota de la llista**, repartides en pestanyes: «General» (número, nom, notes, tecla directa, esperes i encadenament) i les del tipus de cue; per exemple, una cue d'àudio té «Fitxer i temps», «Nivells i foses» i «Sortides». **Ctrl+Tab** passa a la pestanya següent i **Ctrl+Maj+Tab** a l'anterior. Escena recorda l'última pestanya de cada tipus. Arrossega la vora de dalt de l'inspector per fer-lo més alt o més baix; l'alçada es recorda.
+
+A la llista, cada cue porta la **icona del seu tipus amb un color** (la mateixa del botó d'afegir): blau àudio, lila vídeo, rosa imatge, groc text, verd blavós micròfon, taronja fosa, vermell atura/pausa i gris espera.
+
 **Editar diverses cues alhora:** selecciona'n unes quantes (Ctrl+clic o Maj+clic) i el panell de propietats mostra només les que tenen totes (per exemple, dues cues d'àudio: sortida, volum, panorama, bucle, foses i corbes; una cue d'àudio i una espera: només pre-espera, post-espera, encadenament i notes). Els camps en blanc vol dir que tenen valors diferents. El que hi posis (Retorn o canviant de camp) s'aplica a totes. També hi ha **Numera**: torna a numerar les seleccionades per ordre de llista, amb un inici i un pas (per exemple 10, 10.5, 11…).
 
 Cada cue també pot tenir una **tecla directa** (F1, Ctrl+1, una lletra…) que la dispara a més del GO, sense moure la cue en espera. Es tria al camp «Tecla directa»: hi fas clic i prems la tecla (Retrocés la treu). Les tecles que ja fa servir Escena (Espai, Esc, P, E, fletxes…) no es poden triar.

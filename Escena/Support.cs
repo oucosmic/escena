@@ -78,6 +78,9 @@ public sealed class AppSettings
     /// <summary>Mentre Escena és obert, l'ordinador no s'adorm ni hiberna i la pantalla no s'apaga.</summary>
     public bool KeepAwake { get; set; } = true;
 
+    /// <summary>Alçada de l'inspector (les propietats, a sota de la llista), tal com l'ha deixat l'usuari.</summary>
+    public double InspectorHeight { get; set; } = 250;
+
     private static string FilePath => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Escena", "ajustos.json");
 
@@ -171,6 +174,84 @@ public sealed class DepthIndentConverter : IValueConverter
 public sealed class IsGroupConverter : IValueConverter
 {
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture) => value is GroupCue;
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        throw new NotSupportedException();
+}
+
+/// <summary>Icona i color de cada tipus de cue: els mateixos a la llista, a la botonera, a l'inspector i al botó d'afegir.</summary>
+public static class CueLook
+{
+    public static string Icon(object? cue) => cue switch
+    {
+        AudioCue => "",
+        VideoCue => "",
+        ImageCue => "",
+        TextCue => "",
+        MicCue => "",
+        FadeCue => "◢",
+        ControlCue => "",
+        WaitCue => "",
+        GroupCue => "",
+        _ => "",
+    };
+
+    public static string ColorCode(object? cue) => cue switch
+    {
+        AudioCue => "#5AA9F0",
+        VideoCue => "#B58AF0",
+        ImageCue => "#E58BC8",
+        TextCue => "#E5C95A",
+        MicCue => "#4FD0BE",
+        FadeCue => "#F0A04F",
+        ControlCue => "#F0736A",
+        WaitCue => "#A4AAB4",
+        GroupCue => "#E8E8EA",
+        _ => "#9BA0A8",
+    };
+
+    private static readonly Dictionary<string, System.Windows.Media.Brush> Brushes = new();
+
+    public static System.Windows.Media.Brush BrushFor(object? cue)
+    {
+        string color = ColorCode(cue);
+        if (!Brushes.TryGetValue(color, out var brush))
+        {
+            brush = new System.Windows.Media.SolidColorBrush(
+                (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(color));
+            brush.Freeze();
+            Brushes[color] = brush;
+        }
+        return brush;
+    }
+}
+
+/// <summary>Cue → icona del seu tipus.</summary>
+public sealed class CueIconConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture) => CueLook.Icon(value);
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        throw new NotSupportedException();
+}
+
+/// <summary>Cue → lletra de la icona: les icones de Windows, tret de la fosa, que és un símbol.</summary>
+public sealed class CueFontConverter : IValueConverter
+{
+    private static readonly System.Windows.Media.FontFamily Icons = new("Segoe Fluent Icons, Segoe MDL2 Assets");
+    private static readonly System.Windows.Media.FontFamily Symbols = new("Segoe UI Symbol");
+
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        value is FadeCue ? Symbols : Icons;
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        throw new NotSupportedException();
+}
+
+/// <summary>Cue → color del seu tipus.</summary>
+public sealed class CueColorConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture) => CueLook.BrushFor(value);
 
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
         throw new NotSupportedException();

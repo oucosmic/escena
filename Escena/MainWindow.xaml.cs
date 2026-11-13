@@ -20,8 +20,12 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         DataContext = _show;
+        _inspectorHeight = Math.Clamp(_show.MachineSettings.InspectorHeight, 110, 600);
+        InspectorRow.Height = new GridLength(_inspectorHeight);
+        RefreshInspector();
         _show.PropertyChanged += (_, e) =>
         {
+            if (e.PropertyName == nameof(ShowController.SelectedCue)) RefreshInspector();
             if (!_show.IsListLayout) return;
             if (e.PropertyName == nameof(ShowController.SelectedCue) && _show.SelectedCue != null)
                 CueGrid.ScrollIntoView(_show.SelectedCue);
@@ -957,6 +961,14 @@ public partial class MainWindow : Window
                 e.Handled = true;
                 return;
             }
+        }
+
+        // Ctrl+Tab i Ctrl+Maj+Tab: pestanya següent o anterior de l'inspector.
+        if (key == Key.Tab && mods.HasFlag(ModifierKeys.Control) && !mods.HasFlag(ModifierKeys.Alt))
+        {
+            if (!e.IsRepeat) NextInspectorTab(mods.HasFlag(ModifierKeys.Shift) ? -1 : 1);
+            e.Handled = true;
+            return;
         }
 
         if (mods == ModifierKeys.Control)
