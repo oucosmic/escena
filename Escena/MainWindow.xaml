@@ -775,6 +775,8 @@
                             ToolTip="Afegeix Atura / Pausa / Reprèn / Surt del bucle&#x0a;Sobre la cue seleccionada; sense cap seleccionada, sobre totes."/>
                     <Button Style="{StaticResource AddButton}" Content="&#xE916;" Click="AddWait_Click"
                             ToolTip="Afegeix espera&#x0a;Una pausa cronometrada, per fer seqüències amb «Segueix»."/>
+                    <Button Style="{StaticResource AddButton}" Content="&#xE70B;" Click="AddMemo_Click"
+                            ToolTip="Afegeix nota&#x0a;Marca parts de l'espectacle a la llista («Escena 1»…). No fa res i passa sola a la següent (Continua)."/>
                     <Button Style="{StaticResource AddButton}" Content="&#xE8B7;" Click="AddGroup_Click"
                             ToolTip="Afegeix grup (Ctrl+G)&#x0a;Amb diverses cues seleccionades, les posa dins d'un grup nou."/>
                     <Rectangle Width="1" Fill="{StaticResource BorderBrush}" Margin="8,4"/>

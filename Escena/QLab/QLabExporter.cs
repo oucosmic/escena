@@ -219,6 +219,13 @@ public static class QLabExporter
                 case ControlCue c:
                     EmitControl(c, parent);
                     break;
+                case MemoCue:
+                {
+                    string v = Make("memo", parent, cue);
+                    Common(v, cue);
+                    _cueVar[cue.Id] = _targetVar[cue.Id] = v;
+                    break;
+                }
                 case WaitCue wc:
                 {
                     string v = Make("wait", parent, cue);

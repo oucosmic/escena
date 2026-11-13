@@ -54,6 +54,7 @@ public static class FadeCurves
 [JsonDerivedType(typeof(GroupCue), "group")]
 [JsonDerivedType(typeof(MicCue), "mic")]
 [JsonDerivedType(typeof(TextCue), "text")]
+[JsonDerivedType(typeof(MemoCue), "memo")]
 public abstract class Cue : ObservableObject
 {
     /// <summary>Propietats d'execució o derivades: no marquen l'espectacle com a modificat.</summary>

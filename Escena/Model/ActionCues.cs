@@ -112,6 +112,17 @@ public sealed class ControlCue : Cue
     [JsonIgnore] public override double Duration => Action == ControlAction.Stop && !UseOwnFade ? FadeTime : 0;
 }
 
+/// <summary>
+/// Nota a la llista (com les «Memo» del QLab): marca parts de l'espectacle («Escena 1», «Escena 2»…) i no fa res.
+/// Ve amb «Continua» marcat: quan li arriba el GO, passa a la cue següent i l'espectacle no s'hi atura.
+/// </summary>
+public sealed class MemoCue : Cue
+{
+    public MemoCue() => NextAction = NextAction.AutoContinue;
+
+    [JsonIgnore] public override string TypeName => Escena.L.T("Nota");
+}
+
 /// <summary>Una espera cronometrada (útil amb «Segueix» per fer pauses dins d'una seqüència).</summary>
 public sealed class WaitCue : Cue
 {

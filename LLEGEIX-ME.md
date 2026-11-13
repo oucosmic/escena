@@ -22,6 +22,7 @@ Programa nou per a Windows inspirat en Linux Show Player. Reprodueix àudio, ví
 | **Text** | Títols, rètols i sobretítols a la pantalla: mida, color, posició (dalt, mig, baix), franja fosca darrere, temps en pantalla i foses. Amb «Treu els altres textos» cada text nou substitueix l'anterior. |
 | **Micròfon** | Entrada en directe (micròfon o línia) cap a les sortides, amb volum, panorama, foses, matriu, enviaments i ducking. Sona fins que l'atures. |
 | **Espera** | Una pausa cronometrada. Combinada amb «Segueix», serveix per fer seqüències automàtiques. |
+| **Nota** | Marca parts de l'espectacle a la llista («Escena 1», «Escena 2»…). No fa res i ve amb «Continua» marcat: quan li arriba el GO, dispara la següent i l'espectacle no s'hi atura. |
 | **Grup** | **Conté** altres cues, que van just a sota, sagnades (com al QLab). Vegeu «Grups» més avall. |
 
 Corbes de fosa: lineal, **exponencial** (passos iguals de dB, la que sona més «regular»), en S, quadràtica (lenta al principi) i quadràtica inversa (ràpida al principi).
@@ -32,7 +33,9 @@ Cada cue té un **número lliure** («1», «1.5», «2A»…; les noves en rebe
 
 A la llista, cada cue porta la **icona del seu tipus amb un color** (la mateixa del botó d'afegir): blau àudio, lila vídeo, rosa imatge, groc text, verd blavós micròfon, taronja fosa, vermell atura/pausa i gris espera.
 
-**Editar diverses cues alhora:** selecciona'n unes quantes (Ctrl+clic o Maj+clic) i el panell de propietats mostra només les que tenen totes (per exemple, dues cues d'àudio: sortida, volum, panorama, bucle, foses i corbes; una cue d'àudio i una espera: només pre-espera, post-espera, encadenament i notes). Els camps en blanc vol dir que tenen valors diferents. El que hi posis (Retorn o canviant de camp) s'aplica a totes. També hi ha **Numera**: torna a numerar les seleccionades per ordre de llista, amb un inici i un pas (per exemple 10, 10.5, 11…).
+**Editar diverses cues alhora:** selecciona'n unes quantes (Ctrl+clic o Maj+clic) i el panell de propietats mostra només les que tenen totes (per exemple, dues cues d'àudio: sortida, volum, panorama, bucle, foses i corbes; una cue d'àudio i una espera: només pre-espera, post-espera, encadenament i notes). Els camps en blanc vol dir que tenen valors diferents. El que hi posis (Retorn o canviant de camp) s'aplica a totes. També hi ha **Numera**: torna a numerar les seleccionades per ordre de llista, amb un inici i un pas (per exemple 10, 10.5, 11…). Amb cues d'àudio i vídeo hi ha **Iguala el volum**: tries un nivell (per defecte -20 dB) i Escena mesura cada fitxer (entre el seu inici i final, sense els silencis) i posa a cada cue el volum que la deixa a aquell nivell; si una saturaria, es queda més baixa. Es desfà amb Ctrl+Z.
+
+**Noms de les cues associades:** quan canvies el nom d'una cue, les foses i les Atura/Pausa que hi apunten i porten el nom entre «» (com les que crea Escena) passen a portar el nou.
 
 Cada cue també pot tenir una **tecla directa** (F1, Ctrl+1, una lletra…) que la dispara a més del GO, sense moure la cue en espera. Es tria al camp «Tecla directa»: hi fas clic i prems la tecla (Retrocés la treu). Les tecles que ja fa servir Escena (Espai, Esc, P, E, fletxes…) no es poden triar.
 
@@ -50,7 +53,7 @@ Un grup **conté** les seves cues («fills»): a la llista van just a sota del g
 **Modes (com al QLab):**
 - **Línia de temps:** totes les fills comencen alhora; la **pre-espera** de cadascuna és el moment en què sona dins del grup. El GO passa a la cue de després del grup.
 - **Llista:** les fills sonen una darrere l'altra. Es poden barrejar i fer que tornin a començar en acabar. El GO passa a la cue de després del grup.
-- **Entra:** el GO dispara la primera fill i deixa en espera la segona; cada GO dispara la fill següent i, en acabar, surt del grup. Serveix per ordenar la llista en seccions.
+- **Entra:** el GO dispara la primera fill i deixa en espera la segona; cada GO dispara la fill següent i, en acabar, surt del grup. Serveix per ordenar la llista en seccions. Amb grups «Entra» dins de grups «Entra», el GO entra a tots els nivells (si la primera fill és un grup «Entra», queda en espera la segona fill del de dins).
 - **Primera:** el GO dispara només la primera fill; les altres sonen si estan encadenades amb «Continua» o «Segueix». El GO passa a la cue de després del grup.
 - **Aleatòria:** cada GO dispara una fill a l'atzar, sense repetir-ne cap fins que han sonat totes. Si el tornes a disparar (amb una tecla directa o la botonera) mentre encara en sona una, n'hi afegeix una altra sense tallar la primera.
 
