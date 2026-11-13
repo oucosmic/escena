@@ -47,6 +47,51 @@
             </Setter>
         </Style>
 
+        <!-- Botó d'icona de la barra d'eines (icones de Windows); l'etiqueta surt aviat en passar-hi el punter -->
+        <Style x:Key="IconButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="FontFamily" Value="Segoe Fluent Icons, Segoe MDL2 Assets, Segoe UI Symbol"/>
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="Padding" Value="6,6"/>
+            <Setter Property="MinWidth" Value="32"/>
+            <Setter Property="ToolTipService.InitialShowDelay" Value="250"/>
+            <Setter Property="ToolTipService.ShowDuration" Value="20000"/>
+            <Setter Property="ToolTipService.ShowOnDisabled" Value="True"/>
+            <Style.Triggers>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Opacity" Value="0.35"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Botó «afegeix una cue»: un + verd davant de la icona del tipus -->
+        <Style x:Key="AddButton" TargetType="Button" BasedOn="{StaticResource IconButton}">
+            <Setter Property="ContentTemplate">
+                <Setter.Value>
+                    <DataTemplate>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="+" FontFamily="Segoe UI" FontSize="13" FontWeight="Bold" Foreground="#7BE495"
+                                       Margin="0,0,3,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding}" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </DataTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Etiquetes: primera línia = nom i drecera; la resta, què fa -->
+        <Style TargetType="ToolTip">
+            <Setter Property="MaxWidth" Value="340"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="FontSize" Value="12.5"/>
+            <Setter Property="ContentTemplate">
+                <Setter.Value>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding}" TextWrapping="Wrap"/>
+                    </DataTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <Style x:Key="GoButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
             <Setter Property="Background" Value="#2E9E4F"/>
             <Setter Property="BorderBrush" Value="#3FC266"/>

@@ -48,7 +48,7 @@ Un grup **conté** les seves cues («fills»): a la llista van just a sota del g
 - **Llista:** les fills sonen una darrere l'altra. Es poden barrejar i fer que tornin a començar en acabar. El GO passa a la cue de després del grup.
 - **Entra:** el GO dispara la primera fill i deixa en espera la segona; cada GO dispara la fill següent i, en acabar, surt del grup. Serveix per ordenar la llista en seccions.
 - **Primera:** el GO dispara només la primera fill; les altres sonen si estan encadenades amb «Continua» o «Segueix». El GO passa a la cue de després del grup.
-- **Aleatòria:** cada GO dispara una fill a l'atzar, sense repetir-ne cap fins que han sonat totes.
+- **Aleatòria:** cada GO dispara una fill a l'atzar, sense repetir-ne cap fins que han sonat totes. Si el tornes a disparar (amb una tecla directa o la botonera) mentre encara en sona una, n'hi afegeix una altra sense tallar la primera.
 
 Dins de les línies de temps, les llistes i els grups aleatoris, és el grup el que decideix quan sona cada fill: els «Continua» i «Segueix» de les fills no fan res (la comprovació ho avisa). Aturar un grup atura tot el que conté.
 
@@ -104,15 +104,20 @@ Les vistes:
 | 🔁 / ⏸ / ■ al panell «En curs» | Surt del bucle · pausa · atura una sola cue |
 | ↑ ↓ · Retorn · doble clic | Mou la cue en espera · posa en espera la seleccionada |
 | Maj+↑ ↓ · Supr · Ctrl+↑↓ | Canvia la seleccionada · elimina-la · mou-la (entre les del seu nivell) |
+| Ctrl+Z · Ctrl+Y (o Ctrl+Maj+Z) | **Desfà i refà** l'edició de les cues: afegir, esborrar, moure, agrupar, enganxar i canviar propietats (fins a 100 passos). Uns quants canvis seguits compten com un sol pas. Desfer no atura el que sona. Les sortides i el volum general no en formen part. Dins d'un camp de text, desfan el que hi escrius. |
 | Ctrl+G | Fa un grup amb les cues seleccionades |
 | Ctrl+C · Ctrl+X · Ctrl+V · Ctrl+D | Copia, retalla, enganxa i duplica les cues seleccionades (Ctrl+clic o Maj+clic per triar-ne diverses). Un grup es copia amb tot el que conté. S'enganxen després de l'última seleccionada i al seu nivell (dins d'un grup, si és dins d'un grup). Reben números nous si els seus ja hi són, i les foses i aturades copiades amb la seva cue apunten a la còpia. Es pot enganxar en un altre espectacle o en una altra finestra d'Escena. També al menú del botó dret de la llista. Supr amb diverses seleccionades les esborra totes. |
-| Arrossegar i deixar | Reordena les cues, tant a la llista com a la botonera. Una línia blava marca on quedarà. |
+| Arrossegar i deixar | Reordena les cues, tant a la llista com a la botonera. Una línia blava marca on quedarà. A la llista, amb diverses cues seleccionades es mouen totes juntes (també amb Ctrl+↑↓). |
+
+**Barra d'eines:** els botons són icones; en passar-hi el punter surt el nom, què fa i la drecera. Els que tenen un **+** verd afegeixen una cue d'aquell tipus.
+
+**Altres detalls:** pausar, reprendre i tallar fan una rampa de 12 ms perquè no se senti cap «clic». Si tanques Escena amb cues en marxa, demana confirmació. Amb tot en pausa, una cue disparada amb tecla directa o botonera sona, i el botó torna a dir «Pausa». En obrir un espectacle fet amb un Escena més nou, avisa que en desar-lo es pot perdre informació.
 
 ## Eines (botó «Eines ▾» i «✓ Comprova»)
 
 - **✓ Comprova (abans de la funció):** busca fitxers que falten, sortides que no s'han pogut obrir, entrades de micròfon desconnectades, cues buides o amb el destí esborrat, foses que van abans de la seva cue, «Segueix» que no arribaran mai (bucles), encadenaments que s'aturen a si mateixos, tecles repetides, números repetits, volums massa alts i canvis sense desar. Doble clic en una línia per anar a la cue.
 - **Comença des de… (assaig):** tries una cue i un temps («com si fóssim a 2:00 de la cue 14»). Escena calcula els encadenaments automàtics: les cues que ja sonarien comencen a mitges, les foses ja fetes s'apliquen, les que encara han de venir es disparen al seu moment i queda en espera la cue que tocaria. Si vols, també engega les cues anteriors que encara sonarien (bucles, imatges fixes, micròfons). Només pot saber el que és automàtic: els GO manuals d'entremig no els pot endevinar.
-- **Registre d'assaig:** cada cue disparada amb l'hora, com s'ha disparat (GO, automàtica, tecla, botonera, grup) i el temps des de l'anterior. Selecciona un GO i prem **«Encadena amb l'anterior»**: la cue anterior passa a disparar-la sola amb la post-espera real que hi ha hagut. Es pot exportar a CSV i es desa sol cada dia a `%APPDATA%\Escena\registre\`.
+- **Registre d'assaig:** cada cue disparada amb l'hora, com s'ha disparat (GO, automàtica, tecla, botonera, grup) i el temps des de l'anterior. Selecciona un GO i prem **«Encadena amb l'anterior»**: la cue de just abans al mateix nivell (un grup compta sencer) passa a disparar-la sola amb la post-espera real que hi ha hagut. Si no es pot encadenar (primera del seu nivell, o dins d'un grup que mana ell), ho diu. Es pot exportar a CSV i es desa sol cada dia a `%APPDATA%\Escena\registre\`.
 - **Vista de regidor:** finestra a part amb lletra gran: la cue en curs, el temps que li queda, la següent i les seves notes, i el rellotge. F11 = pantalla completa, F10 = la mou a la pantalla següent. Espai fa GO també des d'aquí.
 - **Empaqueta l'espectacle:** tries una carpeta i hi copia l'espectacle i tots els fitxers (a «Fitxers\»). A partir d'aquí treballes amb la còpia, que pots portar sencera a un altre ordinador.
 - **Importa sobretítols:** un fitxer de text on cada bloc separat per una línia en blanc es converteix en una cue de text a baix de la pantalla. Cada GO en mostra un i treu l'anterior.
@@ -168,6 +173,11 @@ Les cues de vídeo i d'imatge surten per una **sortida de pantalla**. N'hi ha un
 - **Pantalla principal:** en finestra, que pots moure i canviar de mida, i que queda sempre per sobre d'Escena. També es pot posar a pantalla completa, però llavors tapa Escena.
 - El botó **«Identifica totes les pantalles»** mostra el número de cada pantalla, i **«Mostra el nom a la pantalla»** comprova on surt.
 - Si obres l'espectacle en un ordinador sense el projector, el vídeo surt en finestra a la pantalla principal (mai la tapa) i es mostra un avís.
+- **Si el projector es desendolla a mitja funció**, la finestra negra passa sola a finestra a la pantalla principal (no tapa Escena); quan el tornes a endollar, hi torna a pantalla completa. El que s'hi mostrava es conserva.
+- **Si una sortida d'àudio cau** (targeta desendollada, error del controlador), Escena la torna a obrir sola (pel dispositiu predeterminat, si el seu no hi és) i avisa a la barra d'estat. Les cues que hi sonaven s'aturen. Un fitxer que falla mentre sona acaba només aquella cue.
+- **Tecla mantinguda:** aguantar Esc, Maj+Esc, Espai, Supr o una tecla directa compta un sol cop (només les fletxes es repeteixen).
+- Canviar les sortides (botó 🔊) les torna a obrir totes: si hi ha cues en marxa, Escena demana confirmació abans; si no has canviat res, no toca res.
+- Pots tenir **diverses finestres d'Escena** obertes: cadascuna té la seva recuperació.
 - Si poses un vídeo o una imatge mentre ja se'n veu un altre, el nou queda a sobre. Amb les foses es poden fer encadenats.
 - **So del vídeo per:** cada cue de vídeo tria per on surt el so. «Predeterminat de Windows» (com abans) o qualsevol sortida d'àudio de l'espectacle (botó 🔊). Per una sortida d'Escena, el so passa pel mesclador com una cue d'àudio: segueix el volum general i l'ajust de la sortida, les foses, la pausa i el ducking, i funciona també amb WASAPI exclusiu i ASIO. Escena el manté sincronitzat amb la imatge fent servir el rellotge del VLC i la latència de la sortida. Si la sortida triada ja no existeix, surt pel predeterminat (la comprovació ho avisa).
 - Pots tenir **diverses pantalles** (botó 🔊 → «+ Pantalla»), cadascuna amb la seva finestra; cada cue tria per quina surt.

@@ -25,6 +25,42 @@ public partial class ShowController
         return block;
     }
 
+    /// <summary>De les cues triades, les que no són dins d'una altra de les triades, en ordre de llista.</summary>
+    public List<Cue> SelectionRoots(IEnumerable<Cue> selection)
+    {
+        var set = selection.Where(Cues.Contains).Distinct().ToList();
+        return set.Where(c => !set.Any(o => o != c && ShowTree.IsDescendant(Cues, c, o))).OrderBy(Cues.IndexOf).ToList();
+    }
+
+    /// <summary>Ctrl+↑↓ amb diverses cues: es mouen totes un lloc, cadascuna entre les del seu nivell.</summary>
+    public List<Cue> MoveCues(IEnumerable<Cue> selection, int delta)
+    {
+        var roots = SelectionRoots(selection);
+        var set = roots.ToHashSet();
+        // La que va al davant en el sentit del moviment es mou primer; una que topa amb el final (o amb una altra de triada) es queda.
+        foreach (var c in delta < 0 ? roots : Enumerable.Reverse(roots))
+        {
+            var siblings = ShowTree.Siblings(Cues, c);
+            int i = siblings.IndexOf(c) + delta;
+            if (i < 0 || i >= siblings.Count || set.Contains(siblings[i])) continue;
+            MoveCue(c, delta);
+        }
+        return roots;
+    }
+
+    /// <summary>Arrossegar diverses cues: van totes juntes (en el seu ordre) davant, darrere o dins de <paramref name="anchor"/>.</summary>
+    public List<Cue> MoveCuesTo(IEnumerable<Cue> selection, Cue? anchor, DropPosition position)
+    {
+        var roots = SelectionRoots(selection);
+        // No es poden deixar sobre elles mateixes ni dins d'un dels seus grups.
+        if (anchor != null && roots.Any(r => r == anchor || ShowTree.IsDescendant(Cues, anchor, r))) return roots;
+        if (position == DropPosition.Into && anchor is not GroupCue) position = DropPosition.After;
+        // «Darrere» col·loca cada cue just després de l'àncora: cal fer-ho del revés perquè quedin en ordre.
+        var order = anchor != null && position == DropPosition.After ? Enumerable.Reverse(roots) : roots;
+        foreach (var c in order.ToList()) MoveCueTo(c, anchor, position);
+        return roots;
+    }
+
     /// <summary>Les cues (amb el que contenen) en JSON, per al porta-retalls.</summary>
     public string SerializeCues(IEnumerable<Cue> selection) =>
         JsonSerializer.Serialize(CopyBlock(selection), ShowFile.Options);

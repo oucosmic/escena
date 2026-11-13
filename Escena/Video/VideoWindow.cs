@@ -79,6 +79,18 @@ public sealed class VideoWindow : Window
         Closing += (_, e) => e.Cancel = !_allowClose; // només es tanca amb l'espectacle
     }
 
+    /// <summary>La pantalla on és i si hi és a pantalla completa (per saber si cal recol·locar-la).</summary>
+    internal MonitorInfo Monitor => _monitor;
+    internal bool IsFullscreen => _fullscreen;
+
+    /// <summary>Treu totes les capes (el que s'està mostrant) per passar-les a una altra finestra.</summary>
+    internal List<UIElement> TakeLayers()
+    {
+        var layers = _layers.Children.Cast<UIElement>().ToList();
+        _layers.Children.Clear();
+        return layers;
+    }
+
     public void AddLayer(UIElement layer) => _layers.Children.Add(layer);
 
     public void RemoveLayer(UIElement layer) => _layers.Children.Remove(layer);

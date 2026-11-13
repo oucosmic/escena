@@ -237,7 +237,7 @@ public sealed partial class ShowController
     {
         "Space", "Escape", "Shift+Escape", "P", "E", "Enter", "Up", "Down", "Shift+Up", "Shift+Down", "Delete",
         "F5", "F6", "F11", "Tab", "Ctrl+N", "Ctrl+O", "Ctrl+S", "Ctrl+Up", "Ctrl+Down", "Ctrl+Shift+S", "Ctrl+G",
-        "Ctrl+C", "Ctrl+X", "Ctrl+V", "Ctrl+D",
+        "Ctrl+C", "Ctrl+X", "Ctrl+V", "Ctrl+D", "Ctrl+Z", "Ctrl+Y", "Ctrl+Shift+Z",
     };
 
     /// <summary>Dispara les cues que tenen aquesta tecla. Retorna si n'hi havia cap.</summary>
@@ -262,12 +262,18 @@ public sealed partial class ShowController
     {
         int i = Log.Entries.IndexOf(entry);
         if (i <= 0) return "Cal una entrada anterior al registre.";
-        var previous = Log.Entries[i - 1];
-        var a = Cues.FirstOrDefault(c => c.Id == previous.CueId);
         var b = Cues.FirstOrDefault(c => c.Id == entry.CueId);
-        if (a == null || b == null) return "Alguna de les dues cues ja no és a l'espectacle.";
-        if (Cues.IndexOf(a) + 1 != Cues.IndexOf(b))
-            return $"{b.DisplayName} no va just després de {a.DisplayName} a la llista: no es pot encadenar.";
+        if (b == null) return "Aquesta cue ja no és a l'espectacle.";
+        // Els encadenaments van a la germana següent (no entren ni surten dels grups): l'anterior és la
+        // germana de just abans, i el temps, des de l'últim cop que es va disparar.
+        var siblings = ShowTree.Siblings(Cues, b);
+        int at = siblings.IndexOf(b);
+        if (at <= 0) return $"{b.DisplayName} és la primera del seu nivell: no hi ha cap cue anterior que la pugui disparar.";
+        var a = siblings[at - 1];
+        if (!ChainsAllowed(a))
+            return $"{a.DisplayName} és dins d'un grup que decideix quan sona cada cue: allà els encadenaments no fan res.";
+        var previous = Log.Entries.Take(i).LastOrDefault(e => e.CueId == a.Id);
+        if (previous == null) return $"{a.DisplayName} (la cue de just abans) no surt al registre abans d'aquesta entrada.";
         double delta = Math.Round((entry.Time - previous.Time).TotalSeconds, 1);
         a.NextAction = NextAction.AutoContinue;
         a.PostWait = delta;
@@ -316,7 +322,11 @@ public sealed partial class ShowController
         Directory.CreateDirectory(mediaDir);
         var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         var used = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var repoint = new List<(MediaCue Cue, string Dest)>();
         int copied = 0, missing = 0;
+
+        // 1. Es copien tots els fitxers sense tocar cap cue: si una còpia falla (disc ple, fitxer obert),
+        //    l'espectacle queda exactament com estava.
         foreach (var cue in Cues.OfType<MediaCue>().ToList())
         {
             if (string.IsNullOrWhiteSpace(cue.FilePath)) continue;
@@ -340,11 +350,25 @@ public sealed partial class ShowController
                 }
                 map[source] = dest;
             }
-            if (!string.Equals(cue.FilePath, dest, StringComparison.OrdinalIgnoreCase)) cue.FilePath = dest;
+            repoint.Add((cue, dest));
         }
+
+        // 2. Les cues passen a apuntar a les còpies i es desa. Si desar falla, tornen on eren.
+        var before = repoint.Select(r => (r.Cue, Old: r.Cue.FilePath)).ToList();
         string showName = FilePath != null ? Path.GetFileName(FilePath) : "Espectacle" + ShowFile.Extension;
         string showPath = Path.Combine(destDir, showName);
-        Save(showPath);
+        try
+        {
+            foreach (var (cue, dest) in repoint)
+                if (!string.Equals(cue.FilePath, dest, StringComparison.OrdinalIgnoreCase)) cue.FilePath = dest;
+            Save(showPath);
+        }
+        catch
+        {
+            foreach (var (cue, old) in before)
+                if (cue.FilePath != old) cue.FilePath = old;
+            throw;
+        }
         Status = $"Empaquetat a {destDir}: {copied} fitxers copiats" + (missing > 0 ? $", {missing} no es troben." : ".");
         return (copied, missing, showPath);
     }

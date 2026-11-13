@@ -30,7 +30,10 @@ public sealed class ShowSettings : ObservableObject
 
 public sealed class ShowDocument
 {
-    public int Version { get; set; } = 5;
+    /// <summary>Versió del format que escriu aquest Escena.</summary>
+    public const int CurrentVersion = 5;
+
+    public int Version { get; set; } = CurrentVersion;
     public double MasterVolumeDb { get; set; }
     public ShowSettings Settings { get; set; } = new();
     public List<OutputConfig> Outputs { get; set; } = new();

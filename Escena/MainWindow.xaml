@@ -553,11 +553,12 @@
         <Border Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1" Padding="6,4">
             <DockPanel>
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
-                    <Button Content="☰ Llista" Click="ListLayout_Click" ToolTip="Vista de llista (F5)"/>
-                    <Button Content="▦ Botonera" Click="CartLayout_Click" ToolTip="Vista de botonera (F6)"/>
+                    <Button Style="{StaticResource IconButton}" Content="&#xEA37;" Click="ListLayout_Click" ToolTip="Vista de llista (F5)"/>
+                    <Button Style="{StaticResource IconButton}" Content="&#xF0E2;" Click="CartLayout_Click" ToolTip="Vista de botonera (F6)&#x0a;Un clic dispara la cue; si ja sona, l'atura."/>
                     <Rectangle Width="1" Fill="{StaticResource BorderBrush}" Margin="8,4"/>
-                    <Button Content="✓ Comprova" Click="Check_Click" ToolTip="Comprovació abans de la funció: fitxers, sortides, cues buides, encadenaments"/>
-                    <Button Content="Eines ▾" Click="Tools_Click">
+                    <Button Style="{StaticResource IconButton}" Content="&#xE9D5;" Click="Check_Click" ToolTip="Comprova abans de la funció&#x0a;Fitxers que falten, sortides, cues buides, encadenaments…"/>
+                    <Button Style="{StaticResource IconButton}" Content="&#xE90F;" Click="Tools_Click"
+                            ToolTip="Eines&#x0a;Comença des de…, registre d'assaig, vista de regidor, empaqueta, sobretítols, exporta al QLab">
                         <Button.ContextMenu>
                             <ContextMenu>
                                 <MenuItem Header="Comença des de… (assaig)" Click="StartFrom_Click"/>
@@ -571,32 +572,48 @@
                             </ContextMenu>
                         </Button.ContextMenu>
                     </Button>
-                    <Button Content="⚙ Ajustos" Click="Settings_Click" ToolTip="Protecció de doble GO, pànic, còpia de seguretat, escolta, idioma"/>
-                    <Button Click="Outputs_Click" ToolTip="Configura les sortides d'àudio" MaxWidth="320">
+                    <Button Style="{StaticResource IconButton}" Content="&#xE713;" Click="Settings_Click"
+                            ToolTip="Ajustos&#x0a;Protecció de doble GO, pànic, còpia de seguretat, escolta, idioma"/>
+                    <Button Click="Outputs_Click" ToolTip="Sortides&#x0a;Configura les sortides d'àudio i les pantalles" MaxWidth="230">
                         <TextBlock TextTrimming="CharacterEllipsis">
                             <Run Text="🔊"/> <Run Text="{Binding OutputSummary, Mode=OneWay}"/>
                         </TextBlock>
                     </Button>
                 </StackPanel>
                 <WrapPanel>
-                    <Button Content="Nou" Click="New_Click" ToolTip="Ctrl+N"/>
-                    <Button Content="Obre…" Click="Open_Click" ToolTip="Ctrl+O"/>
-                    <Button Content="Desa" Click="Save_Click" ToolTip="Ctrl+S"/>
-                    <Button Content="Desa com…" Click="SaveAs_Click" ToolTip="Ctrl+Maj+S"/>
+                    <!-- Icones (les de Windows); cada botó explica què fa en passar-hi el punter -->
+                    <Button Style="{StaticResource IconButton}" Content="&#xE7C3;" Click="New_Click" ToolTip="Espectacle nou (Ctrl+N)"/>
+                    <Button Style="{StaticResource IconButton}" Content="&#xE8E5;" Click="Open_Click" ToolTip="Obre un espectacle (Ctrl+O)"/>
+                    <Button Style="{StaticResource IconButton}" Content="&#xE74E;" Click="Save_Click" ToolTip="Desa (Ctrl+S)"/>
+                    <Button Style="{StaticResource IconButton}" Content="&#xE792;" Click="SaveAs_Click" ToolTip="Desa amb un altre nom (Ctrl+Maj+S)"/>
                     <Rectangle Width="1" Fill="{StaticResource BorderBrush}" Margin="8,4"/>
-                    <Button Content="+ Àudio" Click="AddAudio_Click" ToolTip="També pots arrossegar fitxers a la llista"/>
-                    <Button Content="+ Vídeo" Click="AddVideo_Click"/>
-                    <Button Content="+ Imatge" Click="AddImage_Click"/>
-                    <Button Content="+ Text" Click="AddText_Click" ToolTip="Títols, rètols i sobretítols a la pantalla"/>
-                    <Button Content="+ Micròfon" Click="AddMic_Click" ToolTip="Entrada en directe (micròfon o línia)"/>
-                    <Button Content="+ Fosa" Click="AddFade_Click"/>
-                    <Button Content="+ Atura/Pausa" Click="AddControl_Click"/>
-                    <Button Content="+ Espera" Click="AddWait_Click"/>
-                    <Button Content="+ Grup" Click="AddGroup_Click"/>
+                    <Button Style="{StaticResource IconButton}" Content="&#xE7A7;" Click="Undo_Click" IsEnabled="{Binding CanUndo}"
+                            ToolTip="Desfés (Ctrl+Z)&#x0a;L'últim canvi a les cues: afegir, esborrar, moure, agrupar, enganxar o canviar propietats."/>
+                    <Button Style="{StaticResource IconButton}" Content="&#xE7A6;" Click="Redo_Click" IsEnabled="{Binding CanRedo}"
+                            ToolTip="Refés (Ctrl+Y)"/>
                     <Rectangle Width="1" Fill="{StaticResource BorderBrush}" Margin="8,4"/>
-                    <Button Content="▲" Click="MoveUp_Click" ToolTip="Puja la cue (Ctrl+↑)"/>
-                    <Button Content="▼" Click="MoveDown_Click" ToolTip="Baixa la cue (Ctrl+↓)"/>
-                    <Button Content="Elimina" Click="Delete_Click" ToolTip="Supr"/>
+                    <Button Style="{StaticResource AddButton}" Content="&#xE8D6;" Click="AddAudio_Click"
+                            ToolTip="Afegeix àudio&#x0a;WAV, MP3, FLAC, AIFF, M4A, WMA. També pots arrossegar fitxers a la llista."/>
+                    <Button Style="{StaticResource AddButton}" Content="&#xE714;" Click="AddVideo_Click"
+                            ToolTip="Afegeix vídeo&#x0a;MP4, MOV, MKV, AVI, WMV, WebM…"/>
+                    <Button Style="{StaticResource AddButton}" Content="&#xEB9F;" Click="AddImage_Click"
+                            ToolTip="Afegeix imatge&#x0a;JPG, PNG, BMP, GIF, TIFF a la pantalla"/>
+                    <Button Style="{StaticResource AddButton}" Content="&#xE8D2;" Click="AddText_Click"
+                            ToolTip="Afegeix text&#x0a;Títols, rètols i sobretítols a la pantalla"/>
+                    <Button Style="{StaticResource AddButton}" Content="&#xE720;" Click="AddMic_Click"
+                            ToolTip="Afegeix micròfon&#x0a;Entrada en directe (micròfon o línia)"/>
+                    <Button Style="{StaticResource AddButton}" Content="◢" FontFamily="Segoe UI Symbol" Click="AddFade_Click"
+                            ToolTip="Afegeix fosa&#x0a;Porta la cue seleccionada (o l'última de fitxer) a un volum en un temps i, si vols, l'atura."/>
+                    <Button Style="{StaticResource AddButton}" Content="&#xE71A;" Click="AddControl_Click"
+                            ToolTip="Afegeix Atura / Pausa / Reprèn / Surt del bucle&#x0a;Sobre la cue seleccionada; sense cap seleccionada, sobre totes."/>
+                    <Button Style="{StaticResource AddButton}" Content="&#xE916;" Click="AddWait_Click"
+                            ToolTip="Afegeix espera&#x0a;Una pausa cronometrada, per fer seqüències amb «Segueix»."/>
+                    <Button Style="{StaticResource AddButton}" Content="&#xE8B7;" Click="AddGroup_Click"
+                            ToolTip="Afegeix grup (Ctrl+G)&#x0a;Amb diverses cues seleccionades, les posa dins d'un grup nou."/>
+                    <Rectangle Width="1" Fill="{StaticResource BorderBrush}" Margin="8,4"/>
+                    <Button Style="{StaticResource IconButton}" Content="&#xE70E;" Click="MoveUp_Click" ToolTip="Puja les cues seleccionades (Ctrl+↑)"/>
+                    <Button Style="{StaticResource IconButton}" Content="&#xE70D;" Click="MoveDown_Click" ToolTip="Baixa les cues seleccionades (Ctrl+↓)"/>
+                    <Button Style="{StaticResource IconButton}" Content="&#xE74D;" Click="Delete_Click" ToolTip="Elimina les cues seleccionades (Supr)&#x0a;Es pot desfer amb Ctrl+Z."/>
                 </WrapPanel>
             </DockPanel>
         </Border>
@@ -650,7 +667,7 @@
                       AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Extended" SelectionUnit="FullRow"
                       CanUserSortColumns="False" CanUserReorderColumns="False" CanUserResizeRows="False"
                       AllowDrop="True" DragOver="Cues_DragOver" Drop="Cues_Drop" DragLeave="Cues_DragLeave"
-                      PreviewMouseLeftButtonDown="CueGrid_PreviewMouseDown" PreviewMouseMove="CueGrid_PreviewMouseMove"
+                      PreviewMouseLeftButtonDown="CueGrid_PreviewMouseDown" PreviewMouseLeftButtonUp="CueGrid_PreviewMouseUp" PreviewMouseMove="CueGrid_PreviewMouseMove"
                       MouseDoubleClick="CueGrid_DoubleClick" SelectionChanged="CueGrid_SelectionChanged">
                 <DataGrid.ContextMenu>
                     <ContextMenu>

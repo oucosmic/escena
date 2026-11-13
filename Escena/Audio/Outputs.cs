@@ -126,6 +126,8 @@ public sealed class AudioOutput : IMediaOutput
     public void Open()
     {
         Close();
+        Warning = null;
+        _failure = null;
         try
         {
             switch (_config.Driver)
@@ -142,6 +144,24 @@ public sealed class AudioOutput : IMediaOutput
             OpenWasapi(exclusive: false, forceDefault: true);
         }
         SetMasterVolume(_masterDb);
+        if (_player != null) _player.PlaybackStopped += OnPlaybackStopped;
+    }
+
+    private volatile string? _failure;
+
+    /// <summary>El dispositiu s'ha aturat sol (desendollat, error del controlador…), no perquè l'hàgim tancat.</summary>
+    private void OnPlaybackStopped(object? sender, StoppedEventArgs e)
+    {
+        if (!ReferenceEquals(sender, _player)) return; // un dispositiu que ja hem tancat
+        _failure = e.Exception?.Message ?? "el dispositiu s'ha aturat";
+    }
+
+    /// <summary>Si la sortida ha caigut des de l'última consulta, el motiu (i s'oblida); si no, null.</summary>
+    public string? TakeFailure()
+    {
+        var f = _failure;
+        _failure = null;
+        return f;
     }
 
     private MMDevice GetDevice(bool forceDefault)
@@ -350,6 +370,7 @@ public sealed class AudioOutput : IMediaOutput
     {
         if (_player != null)
         {
+            _player.PlaybackStopped -= OnPlaybackStopped;
             try { _player.Stop(); } catch { /* ignorat */ }
             _player.Dispose();
         }
@@ -395,6 +416,9 @@ public sealed class AudioPlayback : IMediaPlayback
     }
 
     public bool IsFinished => _gain.IsFinished;
+
+    /// <summary>Si s'ha acabat perquè el fitxer ha fallat mentre sonava, el motiu.</summary>
+    public string? Error => _gain.Error;
 
     public bool Paused { get => _gain.Paused; set => _gain.Paused = value; }
 

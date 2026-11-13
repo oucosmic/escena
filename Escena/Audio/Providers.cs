@@ -205,6 +205,10 @@ public sealed class GainRampProvider : ISampleProvider
     private bool _stopWhenDone;
     private volatile bool _paused, _stopped, _finished;
 
+    /// <summary>Durada de la rampa en pausar, reprendre i tallar (segons).</summary>
+    public const double EdgeSeconds = 0.012;
+    private float _edge = 1f;
+
     public GainRampProvider(ISampleProvider source, float initialGain, int outputChannels = 2)
     {
         _source = source;
@@ -223,6 +227,9 @@ public sealed class GainRampProvider : ISampleProvider
     public bool Paused { get => _paused; set => _paused = value; }
 
     public bool IsFinished => _finished;
+
+    /// <summary>Si la cue s'ha acabat perquè el fitxer ha fallat mentre sonava, el motiu.</summary>
+    public string? Error { get; private set; }
 
     public float CurrentGain { get { lock (_lock) return _gain; } }
 
@@ -338,21 +345,33 @@ public sealed class GainRampProvider : ISampleProvider
     public int Read(float[] buffer, int offset, int count)
     {
         if (_finished) return 0;
-        if (_stopped)
+        // Pausar o tallar no és instantani: una rampa molt curta (EdgeSeconds) evita el «clic» als altaveus.
+        bool silence = _paused || _stopped;
+        if (silence && _edge <= 0f)
         {
-            _finished = true;
-            return 0;
-        }
-        if (_paused)
-        {
+            if (_stopped)
+            {
+                _finished = true;
+                return 0;
+            }
             Array.Clear(buffer, offset, count);
             return count;
         }
+        float edgeStep = 1f / Math.Max(1f, (float)(EdgeSeconds * WaveFormat.SampleRate));
 
         int frames = count / _outChannels;
         int need = frames * _inChannels;
         if (_sourceBuffer.Length < need) _sourceBuffer = new float[need];
-        int read = _source.Read(_sourceBuffer, 0, need);
+        int read;
+        try { read = _source.Read(_sourceBuffer, 0, need); }
+        catch (Exception ex)
+        {
+            // Un fitxer que deixa de llegir-se (corrupte, disc desconnectat) acaba aquesta cue, però no pot
+            // fer caure tota la sortida: una excepció aquí aturaria el dispositiu sencer.
+            Error = ex.Message;
+            _finished = true;
+            return 0;
+        }
         int framesRead = read / _inChannels;
 
         lock (_lock)
@@ -395,7 +414,10 @@ public sealed class GainRampProvider : ISampleProvider
                     }
                 }
 
-                float g = _gain * master * _duck;
+                if (silence) { if (_edge > 0f) _edge = Math.Max(0f, _edge - edgeStep); }
+                else if (_edge < 1f) _edge = Math.Min(1f, _edge + edgeStep);
+
+                float g = _gain * master * _duck * _edge;
                 float left = _pan > 0 ? 1 - _pan : 1f;   // balanç sobre els dos primers canals
                 float right = _pan < 0 ? 1 + _pan : 1f;
                 int si = f * _inChannels;

@@ -44,13 +44,20 @@ public partial class MainWindow : Window
             dialog.ShowDialog();
             if (dialog.Choice != RecoveryChoice.None)
             {
-                try { _show.Recover(crashed, dialog.Choice == RecoveryChoice.Continue); }
+                try
+                {
+                    _show.Recover(crashed, dialog.Choice == RecoveryChoice.Continue);
+                    // Ja és carregat; si tenia canvis sense desar, aquesta finestra en farà la seva còpia.
+                    Recovery.Discard(crashed);
+                }
                 catch (Exception ex)
                 {
+                    // Els fitxers de recuperació es queden, per si es pot tornar a provar.
                     MessageBox.Show(this, "No s'ha pogut recuperar l'espectacle:\n\n" + ex.Message, "Escena",
                         MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
+            else Recovery.Discard(crashed);
         }
         else
         {
@@ -328,7 +335,14 @@ public partial class MainWindow : Window
         {
             MessageBox.Show(this, "No s'ha pogut obrir l'espectacle:\n\n" + ex.Message, "Escena",
                 MessageBoxButton.OK, MessageBoxImage.Error);
+            return;
         }
+        if (_show.OpenedNewerVersion)
+            MessageBox.Show(this,
+                "Aquest espectacle s'ha fet amb una versió d'Escena més nova que aquesta.\n\n" +
+                "El pots fer servir, però si el deses des d'aquí es perdrà tot allò que aquesta versió no coneix. " +
+                "Per conservar-ho tot, actualitza Escena o desa'l amb un altre nom.",
+                "Escena", MessageBoxButton.OK, MessageBoxImage.Warning);
     }
 
     private bool SaveShow(bool saveAs = false)
@@ -377,7 +391,16 @@ public partial class MainWindow : Window
     private void Outputs_Click(object sender, RoutedEventArgs e)
     {
         var window = new OutputsWindow(_show.Outputs, _show.FindVideoOutput) { Owner = this };
-        if (window.ShowDialog() == true) _show.ApplyOutputs(window.Result);
+        if (window.ShowDialog() != true || !_show.OutputsDiffer(window.Result)) return;
+        // Aplicar sortides noves les torna a obrir totes: el que soni es talla.
+        if (_show.ActiveCues.Count > 0 && MessageBox.Show(this,
+                $"Hi ha {_show.ActiveCues.Count} cue(s) en marxa. Per aplicar els canvis de les sortides s'han d'aturar totes de cop.\n\nVols aplicar-los ara?",
+                "Escena", MessageBoxButton.OKCancel, MessageBoxImage.Warning) != MessageBoxResult.OK)
+        {
+            _show.Status = "No s'han aplicat els canvis de les sortides.";
+            return;
+        }
+        _show.ApplyOutputs(window.Result);
     }
 
     // ---------------- Vista ----------------
@@ -405,6 +428,7 @@ public partial class MainWindow : Window
     // ---------------- Reordenar arrossegant ----------------
 
     private const string CueDragFormat = "Escena.Cue";
+    private const string CueListDragFormat = "Escena.CueList";
     private static readonly Brush DropMarkerBrush = new SolidColorBrush(Color.FromRgb(0x5B, 0x9B, 0xF0));
     private Point _dragStart;
     private Cue? _dragCandidate;
@@ -412,10 +436,33 @@ public partial class MainWindow : Window
     private FrameworkElement? _dropMarker;
     private DropPosition _dropMarkerPosition;
 
+    private Cue? _clickKeepsSelection;
+
     private void CueGrid_PreviewMouseDown(object sender, MouseButtonEventArgs e)
     {
+        _dragged = false;
         _dragStart = e.GetPosition(this);
         _dragCandidate = FindAncestor<DataGridRow>(e.OriginalSource as DependencyObject)?.Item as Cue;
+        _clickKeepsSelection = null;
+        // Clic sobre una de diverses cues seleccionades: la selecció es conserva per poder-les arrossegar totes.
+        // Si al final no s'arrossega, en deixar anar el botó queda seleccionada només aquesta (com sempre).
+        if (_dragCandidate != null && e.ClickCount == 1 && Keyboard.Modifiers == ModifierKeys.None
+            && CueGrid.SelectedItems.Count > 1 && CueGrid.SelectedItems.Contains(_dragCandidate)
+            && e.OriginalSource is not TextBlock { Text: "▾" or "▸" })
+        {
+            _clickKeepsSelection = _dragCandidate;
+            CueGrid.Focus();
+            e.Handled = true;
+        }
+    }
+
+    private void CueGrid_PreviewMouseUp(object sender, MouseButtonEventArgs e)
+    {
+        var cue = _clickKeepsSelection;
+        _clickKeepsSelection = null;
+        if (cue == null || _dragged || !_show.Cues.Contains(cue)) return;
+        CueGrid.SelectedItems.Clear();
+        CueGrid.SelectedItem = cue;
     }
 
     private void CueGrid_PreviewMouseMove(object sender, MouseEventArgs e) => TryStartDrag(CueGrid, e);
@@ -439,7 +486,11 @@ public partial class MainWindow : Window
         var cue = _dragCandidate;
         _dragCandidate = null;
         _dragged = true;
-        try { DragDrop.DoDragDrop(source, new DataObject(CueDragFormat, cue), DragDropEffects.Move); }
+        var data = new DataObject(CueDragFormat, cue);
+        // A la llista, si la cue arrossegada és una de diverses seleccionades, hi van totes.
+        if (ReferenceEquals(source, CueGrid) && CueGrid.SelectedItems.Count > 1 && CueGrid.SelectedItems.Contains(cue))
+            data.SetData(CueListDragFormat, CueGrid.SelectedItems.OfType<Cue>().ToList());
+        try { DragDrop.DoDragDrop(source, data, DragDropEffects.Move); }
         finally { ClearDropMarker(); }
     }
 
@@ -764,12 +815,20 @@ public partial class MainWindow : Window
 
     private void MoveUp_Click(object sender, RoutedEventArgs e)
     {
-        if (_show.SelectedCue != null) _show.MoveCue(_show.SelectedCue, -1);
+        MoveSelection(-1);
     }
 
     private void MoveDown_Click(object sender, RoutedEventArgs e)
     {
-        if (_show.SelectedCue != null) _show.MoveCue(_show.SelectedCue, +1);
+        MoveSelection(+1);
+    }
+
+    /// <summary>Mou la cue seleccionada o, si n'hi ha diverses, totes alhora.</summary>
+    private void MoveSelection(int delta)
+    {
+        var selected = SelectedCues();
+        if (selected.Count > 1) SelectPasted(_show.MoveCues(selected, delta));
+        else if (_show.SelectedCue != null) _show.MoveCue(_show.SelectedCue, delta);
     }
 
     private void BrowseFile_Click(object sender, RoutedEventArgs e)
@@ -814,7 +873,10 @@ public partial class MainWindow : Window
         {
             var (anchor, dropAt, _) = GetDropTarget(e);
             ClearDropMarker();
-            _show.MoveCueTo(dragged, anchor, dropAt);
+            if (e.Data.GetData(CueListDragFormat) is List<Cue> { Count: > 1 } many)
+                SelectPasted(_show.MoveCuesTo(many, anchor, dropAt));
+            else
+                _show.MoveCueTo(dragged, anchor, dropAt);
             e.Handled = true;
             return;
         }
@@ -871,6 +933,12 @@ public partial class MainWindow : Window
 
         if (mods == ModifierKeys.Control)
         {
+            // Mantenir Ctrl+V o Ctrl+D no ha d'enganxar ni duplicar sense parar (dins d'un camp de text, sí).
+            if (e.IsRepeat && key is not (Key.Up or Key.Down) && Keyboard.FocusedElement is not TextBox)
+            {
+                e.Handled = true;
+                return;
+            }
             bool handled = true;
             switch (key)
             {
@@ -885,6 +953,9 @@ public partial class MainWindow : Window
                 case Key.X when Keyboard.FocusedElement is not TextBox: CutCues_Click(sender, e); break;
                 case Key.V when Keyboard.FocusedElement is not TextBox: PasteCues_Click(sender, e); break;
                 case Key.D when Keyboard.FocusedElement is not TextBox: DuplicateCues_Click(sender, e); break;
+                // Desfer i refer l'edició de cues (dins d'un camp de text, desfan el que s'hi escriu).
+                case Key.Z when Keyboard.FocusedElement is not TextBox: Undo_Click(sender, e); break;
+                case Key.Y when Keyboard.FocusedElement is not TextBox: Redo_Click(sender, e); break;
                 default: handled = false; break;
             }
             if (handled)
@@ -899,10 +970,17 @@ public partial class MainWindow : Window
             e.Handled = true;
             return;
         }
+        if (mods == (ModifierKeys.Control | ModifierKeys.Shift) && key == Key.Z && Keyboard.FocusedElement is not TextBox)
+        {
+            Redo_Click(sender, e);
+            e.Handled = true;
+            return;
+        }
         // El pànic funciona sempre, encara que s'estigui escrivint.
         if (mods == ModifierKeys.Shift && key == Key.Escape)
         {
-            _show.Panic();
+            // Mantenir la tecla no compta com un segon toc (que tallaria de cop).
+            if (!e.IsRepeat) _show.Panic();
             e.Handled = true;
             return;
         }
@@ -926,6 +1004,14 @@ public partial class MainWindow : Window
         }
         if (Keyboard.FocusedElement is ComboBoxItem || (Keyboard.FocusedElement is ComboBox cb && cb.IsDropDownOpen))
             return;
+
+        // Tecla mantinguda: Windows la repeteix sola. Només les fletxes es repeteixen; la resta (GO, Esc, pausa,
+        // Supr, tecles directes…) compta un sol cop, perquè aguantar Esc no talli la fosa ni Espai dispari diverses cues.
+        if (e.IsRepeat && key is not (Key.Up or Key.Down))
+        {
+            e.Handled = mods != ModifierKeys.Control;
+            return;
+        }
 
         // Tecles directes de les cues (mai no coincideixen amb les d'Escena: estan reservades).
         string keyName = KeyNames.Format(key, mods);
@@ -977,15 +1063,35 @@ public partial class MainWindow : Window
 
     private void SelectRelative(int delta)
     {
-        if (_show.Cues.Count == 0) return;
+        // Només les cues que es veuen: les de dins d'un grup plegat se salten.
+        var visible = _show.Cues.Where(c => !c.IsHiddenByGroup).ToList();
+        if (visible.Count == 0) return;
         // Al final de la llista (sense selecció), ↑ torna a l'última cue.
-        int index = _show.SelectedCue != null ? _show.Cues.IndexOf(_show.SelectedCue) + delta
-            : delta < 0 ? _show.Cues.Count - 1 : 0;
-        _show.SelectedCue = _show.Cues[Math.Clamp(index, 0, _show.Cues.Count - 1)];
+        int index = _show.SelectedCue != null && visible.IndexOf(_show.SelectedCue) is var i and >= 0 ? i + delta
+            : delta < 0 ? visible.Count - 1 : 0;
+        _show.SelectedCue = visible[Math.Clamp(index, 0, visible.Count - 1)];
+    }
+
+    private void Undo_Click(object sender, RoutedEventArgs e)
+    {
+        if (_show.Undo()) QueueBulkRefresh();
+    }
+
+    private void Redo_Click(object sender, RoutedEventArgs e)
+    {
+        if (_show.Redo()) QueueBulkRefresh();
     }
 
     private void Window_Closing(object? sender, CancelEventArgs e)
     {
+        // A mitja funció, tancar per error (Alt+F4, la creu) ho tallaria tot.
+        if (_show.ActiveCues.Count > 0 && MessageBox.Show(this,
+                $"Hi ha {_show.ActiveCues.Count} cue(s) en marxa. Si tanques Escena s'aturaran de cop.\n\nVols tancar igualment?",
+                "Escena", MessageBoxButton.OKCancel, MessageBoxImage.Warning, MessageBoxResult.Cancel) != MessageBoxResult.OK)
+        {
+            e.Cancel = true;
+            return;
+        }
         if (!ConfirmDiscard())
         {
             e.Cancel = true;

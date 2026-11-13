@@ -309,7 +309,15 @@ public sealed class WaveformView : FrameworkElement
             InvalidateVisual();
             return;
         }
-        if (Cache.TryGetValue(path, out var cached))
+        // La clau porta la mida i la data del fitxer: si se substitueix pel mateix nom, es torna a calcular.
+        string key = path;
+        try
+        {
+            var info = new FileInfo(path);
+            key = $"{path}|{info.Length}|{info.LastWriteTimeUtc.Ticks}";
+        }
+        catch { /* sense dades del fitxer: es fa servir només el nom */ }
+        if (Cache.TryGetValue(key, out var cached))
         {
             (_peaks, _duration) = cached;
             _loading = false;
@@ -322,7 +330,10 @@ public sealed class WaveformView : FrameworkElement
         try
         {
             var result = await Task.Run(() => Compute(path));
-            Cache[path] = result;
+            // Les versions antigues del mateix fitxer ja no calen.
+            foreach (var old in Cache.Keys.Where(k => k.StartsWith(path + "|", StringComparison.OrdinalIgnoreCase)).ToList())
+                Cache.TryRemove(old, out _);
+            Cache[key] = result;
             if (path != FilePath) return; // mentrestant s'ha canviat de cue
             (_peaks, _duration) = result;
         }

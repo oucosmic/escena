@@ -33,8 +33,16 @@ public sealed class VideoOutput : IMediaOutput
     public void Open()
     {
         Close();
+        var (monitor, fullscreen) = Target();
+        Show(monitor, fullscreen);
+    }
+
+    /// <summary>On ha d'anar la finestra ara mateix, segons les pantalles connectades.</summary>
+    private (MonitorInfo Monitor, bool Fullscreen) Target()
+    {
         var monitor = Monitors.Resolve(_config.ScreenId, out bool found);
         bool fullscreen = _config.Fullscreen;
+        Warning = null;
         if (!found)
         {
             // Sense el projector no es tapa mai la pantalla de l'operador.
@@ -42,10 +50,32 @@ public sealed class VideoOutput : IMediaOutput
             Warning = $"«{_config.Name}»: la pantalla escollida no hi és; s'usa la {monitor.Label.ToLowerInvariant()}"
                       + (monitor.IsPrimary ? " en finestra." : ".");
         }
+        return (monitor, fullscreen);
+    }
+
+    private void Show(MonitorInfo monitor, bool fullscreen)
+    {
         Window = new VideoWindow(_config.Name, monitor, fullscreen);
         Window.SetCorrection(_config.Corners);
         Window.Show();
         Description = $"{_config.Name}: {monitor.Label}{(fullscreen ? ", pantalla completa" : ", finestra")}";
+    }
+
+    /// <summary>
+    /// Les pantalles han canviat (projector desendollat o tornat a endollar, canvi de resolució): torna a
+    /// col·locar la finestra on toca, conservant el que s'hi mostra. Retorna si l'ha hagut de moure.
+    /// </summary>
+    public bool RefreshDisplay()
+    {
+        if (Window == null) return false;
+        var (monitor, fullscreen) = Target();
+        if (monitor == Window.Monitor && fullscreen == Window.IsFullscreen) return false;
+        var old = Window;
+        var layers = old.TakeLayers();
+        old.ForceClose();
+        Show(monitor, fullscreen);
+        foreach (var layer in layers) Window!.AddLayer(layer);
+        return true;
     }
 
     public IMediaPlayback Play(MediaCue cue, double offset = 0)

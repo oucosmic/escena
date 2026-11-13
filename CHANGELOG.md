@@ -3,6 +3,30 @@
 Numeració: MAJOR.MENOR.CORRECCIÓ. Mentre el primer número sigui 0, Escena encara és en desenvolupament.
 La versió del format dels fitxers `.show` va a part (ara és la 5) i només canvia quan canvia com es desen els espectacles.
 
+## Pendent de publicar
+
+Novetats:
+
+- **Desfer i refer** (Ctrl+Z, Ctrl+Y o Ctrl+Maj+Z): afegir, esborrar, moure, agrupar, enganxar i canviar propietats, fins a 100 passos. No atura el que sona.
+- **Barra d'eines amb icones:** en passar-hi el punter surt el nom, què fa i la drecera. Els botons amb un + verd afegeixen una cue.
+- **Moure diverses cues alhora** amb Ctrl+↑↓ o arrossegant-les.
+- Pausar, reprendre i tallar fan una rampa de 12 ms per no fer «clic».
+- Avís en tancar amb cues en marxa i en obrir un espectacle fet amb un Escena més nou.
+- Amb tot en pausa, una cue disparada amb tecla directa o botonera sona i el botó torna a dir «Pausa».
+
+Correccions:
+
+- Tornar a disparar un grup aleatori ja no talla la fill que sona.
+- «Encadena amb l'anterior» del registre d'assaig té en compte els grups.
+- Cada finestra d'Escena té la seva recuperació: tancar-ne una no esborra la de l'altra.
+- Una tecla mantinguda (Esc, Maj+Esc, Espai, Supr, tecles directes) compta un sol cop.
+- Un fitxer que falla mentre sona acaba només aquella cue; si una sortida d'àudio cau, es torna a obrir sola.
+- Si el projector es desendolla, la finestra de vídeo no es queda tapant Escena, i hi torna quan es torna a endollar.
+- Canviar les sortides demana confirmació si hi ha cues en marxa, i no toca res si no ha canviat res.
+- Empaquetar no deixa l'espectacle a mitges si falla una còpia.
+- Maj+↑↓ ja no selecciona cues amagades dins d'un grup plegat.
+- La forma d'ona es torna a calcular si el fitxer se substitueix pel mateix nom.
+
 ## 0.7.0 — 2026-11-11
 
 - **Zoom a la forma d'ona:** roda del ratolí al voltant del punter, Maj+roda o botó del mig per desplaçar-se, i els botons 🔍+ 🔍− «Tot», «▏Inici» i «Final▕» per afinar l'inici i el final fins al mil·lisegon (els camps d'inici i final ara tenen tres decimals).

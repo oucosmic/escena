@@ -78,6 +78,7 @@ public sealed partial class ShowController : ObservableObject, IDisposable
         _timer = new DispatcherTimer(DispatcherPriority.Render) { Interval = TimeSpan.FromMilliseconds(15) };
         _timer.Tick += (_, _) => Tick();
         _timer.Start();
+        WatchDisplays();
     }
 
     public ObservableCollection<Cue> Cues { get; } = new();
@@ -205,6 +206,7 @@ public sealed partial class ShowController : ObservableObject, IDisposable
     /// <summary>Aplica una llista nova de sortides (des del diàleg) i les torna a obrir.</summary>
     public void ApplyOutputs(IReadOnlyList<OutputConfig> edited)
     {
+        if (!OutputsDiffer(edited)) return; // res a canviar: no es toca res del que sona
         // S'actualitza la col·lecció al seu lloc perquè els desplegables no perdin la selecció.
         foreach (var old in Outputs.ToList())
             if (edited.All(e => e.Id != old.Id)) Outputs.Remove(old);
@@ -216,6 +218,14 @@ public sealed partial class ShowController : ObservableObject, IDisposable
         }
         IsDirty = true;
         ReopenOutputs();
+    }
+
+    /// <summary>La llista editada canvia alguna cosa respecte de les sortides actuals? (Aplicar-la ho atura tot.)</summary>
+    public bool OutputsDiffer(IReadOnlyList<OutputConfig> edited)
+    {
+        static string Json(IEnumerable<OutputConfig> list) =>
+            System.Text.Json.JsonSerializer.Serialize(list.ToList(), ShowFile.Options);
+        return Json(Outputs) != Json(edited);
     }
 
     public void ReopenOutputs()
@@ -294,8 +304,12 @@ public sealed partial class ShowController : ObservableObject, IDisposable
         // La còpia antiga no s'esborra aquí: en arrencar pot caldre per recuperar.
         _hasRecoveryCopy = false;
         _sessionChanged = true;
+        ResetUndo();
         Status = "Espectacle nou.";
     }
+
+    /// <summary>L'últim espectacle obert és d'una versió d'Escena més nova que aquesta.</summary>
+    public bool OpenedNewerVersion { get; private set; }
 
     public void Load(string path)
     {
@@ -308,6 +322,8 @@ public sealed partial class ShowController : ObservableObject, IDisposable
         string opened = $"Obert: {Path.GetFileName(path)} ({Cues.Count} cues)";
         if (missing > 0) opened += $" — atenció: {missing} cue(s) amb fitxers que no es troben";
         if (legacy) opened += " — format antic, es desarà com a .show";
+        OpenedNewerVersion = doc.Version > ShowDocument.CurrentVersion;
+        if (OpenedNewerVersion) opened += " — atenció: fet amb un Escena més nou; en desar-lo es pot perdre el que aquesta versió no coneix";
         if (Status.StartsWith("Atenció")) opened += ". " + Status;
         Status = opened;
     }
@@ -328,6 +344,7 @@ public sealed partial class ShowController : ObservableObject, IDisposable
         IsDirty = dirty;
         _hasRecoveryCopy = false; // la propera còpia automàtica la tornarà a crear si cal
         _sessionChanged = true;
+        ResetUndo();
     }
 
     public void Save(string path)
@@ -344,11 +361,14 @@ public sealed partial class ShowController : ObservableObject, IDisposable
     /// <summary>Torna a obrir l'espectacle d'una sessió que va acabar malament.</summary>
     public void Recover(SessionState state, bool continueFromStandby)
     {
-        bool fromCopy = state.HasUnsavedCopy && File.Exists(Recovery.CopyFile);
+        string copyPath = state.CopyPath ?? Recovery.CopyFile;
+        bool fromCopy = state.HasUnsavedCopy && File.Exists(copyPath);
         if (!fromCopy && (state.ShowPath == null || !File.Exists(state.ShowPath)))
             throw new FileNotFoundException("No s'ha trobat ni la còpia ni el fitxer de l'espectacle.");
-        var doc = ShowFile.Load(fromCopy ? Recovery.CopyFile : state.ShowPath!);
+        var doc = ShowFile.Load(fromCopy ? copyPath : state.ShowPath!);
         ApplyDocument(doc, state.ShowPath, dirty: fromCopy);
+        // Els canvis sense desar passen de seguida a la còpia d'aquesta finestra (la de la sessió morta s'esborrarà).
+        if (fromCopy && Recovery.SaveCopy(BuildDocument())) _hasRecoveryCopy = true;
         if (continueFromStandby)
         {
             var standby = Cues.FirstOrDefault(c => c.Id == state.StandbyCueId);
@@ -533,6 +553,7 @@ public sealed partial class ShowController : ObservableObject, IDisposable
             foreach (Cue c in e.NewItems) c.PropertyChanged += OnCuePropertyChanged;
         for (int i = 0; i < Cues.Count; i++) Cues[i].Position = i + 1;
         IsDirty = true;
+        MarkUndoChange();
         if (_moving) return;
         // Una cue que surt de la llista deixa òrfenes les seves fills: pugen de nivell.
         if (e.OldItems != null)
@@ -545,7 +566,11 @@ public sealed partial class ShowController : ObservableObject, IDisposable
 
     private void OnCuePropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName != null && !Cue.RuntimeProperties.Contains(e.PropertyName)) IsDirty = true;
+        if (e.PropertyName != null && !Cue.RuntimeProperties.Contains(e.PropertyName))
+        {
+            IsDirty = true;
+            MarkUndoChange();
+        }
         if (e.PropertyName == nameof(Cue.Number)) UpdateDuplicateWarning();
         if (e.PropertyName == nameof(GroupCue.IsCollapsed) && !_moving)
         {
@@ -643,7 +668,8 @@ public sealed partial class ShowController : ObservableObject, IDisposable
 
     public void TogglePauseAll()
     {
-        bool pause = !IsAllPaused;
+        // Si no «tot» està en pausa però tot el que hi ha en marxa ho està (cues pausades una a una), reprèn.
+        bool pause = !IsAllPaused && !(ActiveCues.Count > 0 && ActiveCues.All(c => c.IsPaused));
         IsAllPaused = pause;
         foreach (var c in ActiveCues.ToList())
         {
@@ -821,7 +847,12 @@ public sealed partial class ShowController : ObservableObject, IDisposable
 
     private void Trigger(Cue cue, string source = "GO")
     {
-        if (cue.IsActive) StopCue(cue, 0);
+        // Tornar a disparar una cue en marxa la reinicia. Un grup aleatori no: cada tret hi afegeix una
+        // altra fill, sense tallar les que ja sonen.
+        if (cue.IsActive && cue is not GroupCue { Mode: GroupMode.StartRandom }) StopCue(cue, 0);
+        // Amb tot en pausa, una cue disparada (tecla directa, botonera) sona: ja no «tot» està en pausa, i el
+        // botó torna a dir «Pausa». Les que estaven en pausa s'hi queden fins que es reprenguin.
+        if (IsAllPaused) IsAllPaused = false;
         Log.Add(cue, source);
         cue.IsPaused = false;
         cue.WaitElapsed = 0;
@@ -1005,6 +1036,8 @@ public sealed partial class ShowController : ObservableObject, IDisposable
         }
 
         UpdateDelayed(dt);
+        UpdateUndo(dt);
+        UpdateHealth(dt);
         UpdateDucking();
         UpdateStageInfo(dt);
         UpdatePreview();
@@ -1036,9 +1069,17 @@ public sealed partial class ShowController : ObservableObject, IDisposable
                         if (pb.IsFinished)
                         {
                             bool natural = cue.State != CueState.Stopping;
+                            string? failed = (pb as AudioPlayback)?.Error;
                             _playbacks.Remove(media);
                             pb.Dispose();
                             FinishCue(cue, natural);
+                            if (failed != null)
+                            {
+                                // El fitxer ha deixat de llegir-se a mitges: la cue s'acaba, l'espectacle continua.
+                                cue.State = CueState.Error;
+                                cue.ErrorMessage = "El fitxer ha fallat mentre sonava: " + failed;
+                                Status = $"Error a la cue {cue.DisplayName}: {cue.ErrorMessage}";
+                            }
                             return;
                         }
                         cue.Elapsed = pb.Position;
@@ -1131,6 +1172,7 @@ public sealed partial class ShowController : ObservableObject, IDisposable
     public void Shutdown(bool clean)
     {
         _timer.Stop();
+        UnwatchDisplays();
         StopAll(0);
         StopPreview();
         _previewOutput?.Dispose();
