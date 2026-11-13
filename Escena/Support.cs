@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Windows;
 using System.Windows.Data;
 using Escena.Model;
@@ -193,6 +193,7 @@ public static class CueLook
         ControlCue => "",
         WaitCue => "",
         GroupCue => "",
+        MemoCue => "\uE70B",
         _ => "",
     };
 
@@ -207,6 +208,7 @@ public static class CueLook
         ControlCue => "#F0736A",
         WaitCue => "#A4AAB4",
         GroupCue => "#E8E8EA",
+        MemoCue => "#8FC79A",
         _ => "#9BA0A8",
     };
 

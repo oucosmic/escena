@@ -102,6 +102,42 @@ public partial class MainWindow
         row.Children.Add(renumber);
         p.Children.Add(row);
 
+        // Igualar el volum (només si totes són àudio o vídeo)
+        if (cues.All(c => c is AudioCue or VideoCue))
+        {
+            p.Children.Add(Ui.Label(L.T("Iguala el volum (nivell mitjà en dB)")));
+            var target = new TextBox { Text = "-20", Width = 70, Margin = new Thickness(0, 0, 6, 0),
+                ToolTip = L.T("Nivell al qual sonaran totes: -20 és un nivell còmode per a música i efectes; -16 sona més fort.") };
+            Button? normalize = null;
+            normalize = Ui.Button(L.T("Iguala"), async (_, _) =>
+            {
+                if (!BulkField.TryParseNumber(target.Text, out double t) || t > 0 || t < -60)
+                {
+                    _show.Status = L.T("Escriu un nivell entre -60 i 0 dB.");
+                    return;
+                }
+                normalize!.IsEnabled = false;
+                _show.Status = L.T("Mesurant el volum dels fitxers…");
+                var list = cues.OfType<PlayableCue>().ToList();
+                var plan = await Task.Run(() => Escena.Audio.Loudness.Plan(list, t));
+                foreach (var r in plan.Where(r => r.Error == null)) r.Cue.VolumeDb = r.NewVolumeDb;
+                normalize.IsEnabled = true;
+                int ok = plan.Count(r => r.Error == null), limited = plan.Count(r => r.Error == null && r.Limited);
+                var failed = plan.Where(r => r.Error != null).ToList();
+                string msg = $"{L.T("Volum igualat a")} {ok} {L.T("cues")}.";
+                if (limited > 0) msg += $" {limited} {L.T("han quedat més baixes per no saturar.")}";
+                if (failed.Count > 0) msg += $" {L.T("No s'han pogut mesurar:")} " + string.Join(", ", failed.Select(f => $"{f.Cue.DisplayName} ({f.Error})"));
+                _show.Status = msg;
+                QueueBulkRefresh();
+            });
+            normalize.Padding = new Thickness(10, 2, 10, 2);
+            normalize.ToolTip = L.T("Mesura cada fitxer (entre el seu inici i final) i posa a cada cue el volum que la deixa a aquest nivell. Si una cue saturaria, es queda més baixa. Es pot desfer amb Ctrl+Z.");
+            var nrow = new StackPanel { Orientation = Orientation.Horizontal };
+            nrow.Children.Add(target);
+            nrow.Children.Add(normalize);
+            p.Children.Add(nrow);
+        }
+
         var fields = BulkEdit.FieldsFor(cues, _show.Outputs, _show.VideoAudioChoices);
         foreach (var field in fields)
         {

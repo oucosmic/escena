@@ -688,6 +688,9 @@ public partial class MainWindow : Window
     private void AddMic_Click(object sender, RoutedEventArgs e) =>
         _show.InsertCue(new MicCue { Name = "Micròfon", FadeIn = 0.3, FadeOut = 1 });
 
+    private void AddMemo_Click(object sender, RoutedEventArgs e) =>
+        _show.InsertCue(new MemoCue { Name = L.T("Escena") });
+
     private void AddWait_Click(object sender, RoutedEventArgs e) =>
         _show.InsertCue(new WaitCue { Name = "Espera" });
 

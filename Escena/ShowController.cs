@@ -550,7 +550,18 @@ public sealed partial class ShowController : ObservableObject, IDisposable
         if (e.OldItems != null)
             foreach (Cue c in e.OldItems) c.PropertyChanged -= OnCuePropertyChanged;
         if (e.NewItems != null)
-            foreach (Cue c in e.NewItems) c.PropertyChanged += OnCuePropertyChanged;
+            foreach (Cue c in e.NewItems)
+            {
+                c.PropertyChanged += OnCuePropertyChanged;
+                _knownNames[c] = c.Name;
+            }
+        if (e.OldItems != null)
+            foreach (Cue c in e.OldItems) _knownNames.Remove(c);
+        if (e.Action == NotifyCollectionChangedAction.Reset)
+        {
+            _knownNames.Clear();
+            foreach (var c in Cues) _knownNames[c] = c.Name;
+        }
         for (int i = 0; i < Cues.Count; i++) Cues[i].Position = i + 1;
         IsDirty = true;
         MarkUndoChange();
@@ -572,6 +583,7 @@ public sealed partial class ShowController : ObservableObject, IDisposable
             MarkUndoChange();
         }
         if (e.PropertyName == nameof(Cue.Number)) UpdateDuplicateWarning();
+        if (e.PropertyName == nameof(Cue.Name) && sender is Cue renamed) RenameDependents(renamed);
         if (e.PropertyName == nameof(GroupCue.IsCollapsed) && !_moving)
         {
             AfterTreeChange();
@@ -582,6 +594,27 @@ public sealed partial class ShowController : ObservableObject, IDisposable
                 if (StandbyCue != null && ShowTree.IsDescendant(Cues, StandbyCue, g)) StandbyCue = g;
                 if (SelectedCue != null && ShowTree.IsDescendant(Cues, SelectedCue, g)) SelectedCue = g;
             }
+        }
+    }
+
+    /// <summary>Nom que tenia cada cue (per saber el nom antic quan canvia).</summary>
+    private readonly Dictionary<Cue, string> _knownNames = new(ReferenceEqualityComparer.Instance);
+
+    /// <summary>
+    /// Una cue canvia de nom: les foses i les Atura/Pausa que hi apunten i porten el nom antic entre «» (com els
+    /// noms que posa Escena, p. ex. «Fosa de «Pluja»») passen a portar el nou. Els noms escrits a mà sense el nom
+    /// de la cue no es toquen.
+    /// </summary>
+    private void RenameDependents(Cue cue)
+    {
+        string old = _knownNames.TryGetValue(cue, out var n) ? n : "";
+        _knownNames[cue] = cue.Name;
+        if (old == "" || old == cue.Name) return;
+        string from = "«" + old + "»", to = "«" + cue.Name + "»";
+        foreach (var c in Cues)
+        {
+            Guid? target = c switch { FadeCue f => f.TargetId, ControlCue k when !k.AllCues => k.TargetId, _ => null };
+            if (target == cue.Id && c.Name.Contains(from)) c.Name = c.Name.Replace(from, to);
         }
     }
 
@@ -615,7 +648,8 @@ public sealed partial class ShowController : ObservableObject, IDisposable
 
     /// <summary>
     /// La cue que queda en espera després de fer GO a <paramref name="cue"/>: la de després (saltant el contingut
-    /// d'un grup); amb un grup «entra», la seva segona fill.
+    /// d'un grup); amb un grup «entra», la seva segona fill. Si la primera fill d'un grup «entra» també és un grup
+    /// «entra», el GO hi entra (la que queda en espera és la segona fill del de dins, i així a tots els nivells).
     /// </summary>
     private Cue? NextStandbyAfter(Cue cue)
     {
@@ -624,6 +658,9 @@ public sealed partial class ShowController : ObservableObject, IDisposable
         if (cue is GroupCue { Mode: GroupMode.StartFirstAndEnter } g)
         {
             var kids = ShowTree.Children(Cues, g);
+            // La primera fill és un grup «entra»: el GO l'engega i hi entra.
+            if (kids.Count > 0 && kids[0] is GroupCue { Mode: GroupMode.StartFirstAndEnter } inner && ShowTree.Children(Cues, inner).Count > 0)
+                return NextStandbyAfter(inner);
             if (kids.Count > 1) return kids[1];
         }
         int next = cue is GroupCue ? ShowTree.SubtreeEnd(Cues, i) : i + 1;
