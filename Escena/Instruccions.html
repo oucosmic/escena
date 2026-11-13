@@ -82,7 +82,7 @@ pre{background:var(--code);border:1px solid var(--line);padding:12px 14px;border
 <div class="layout">
 <nav>
   <div class="brand"><span class="logo">▶</span>Escena</div>
-  <div class="ver">Versió 0.7 · Instruccions</div>
+  <div class="ver">Versió 0.8 · Instruccions</div>
   <input id="q" type="search" placeholder="Cerca…" aria-label="Cerca a les instruccions">
   <ul id="toc">
     <li><a href="#inici">Per començar</a></li>
@@ -91,6 +91,7 @@ pre{background:var(--code);border:1px solid var(--line);padding:12px 14px;border
     <li><a href="#encadenament">Encadenament</a></li>
     <li><a href="#bucles">Bucles dins del fitxer</a></li>
     <li><a href="#vistes">Vistes i cursors</a></li>
+    <li><a href="#funcio">Mode funció</a></li>
     <li><a href="#controls">Controls en directe</a></li>
     <li><a href="#escolta">Escoltar pels auriculars</a></li>
     <li><a href="#sortides">Sortides d'àudio</a></li>
@@ -145,7 +146,7 @@ pre{background:var(--code);border:1px solid var(--line);padding:12px 14px;border
   <h3>Corbes de fosa</h3>
   <p>Lineal · <b>exponencial</b> (passos iguals de dB, la que sona més regular) · en S · quadràtica (lenta al principi) · quadràtica inversa (ràpida al principi).</p>
   <h3>Editar diverses cues alhora</h3>
-  <p>Selecciona'n unes quantes (<kbd>Ctrl</kbd>+clic o <kbd>Maj</kbd>+clic) i el panell de propietats mostra <b>només les que tenen totes</b>. Un camp en blanc vol dir que tenen valors diferents; el que hi posis (<kbd>Retorn</kbd> o canviant de camp) s'aplica a totes. Amb <span class="tag">Numera</span> les tornes a numerar per ordre de llista amb un inici i un pas (10, 10.5, 11…).</p>
+  <p>Selecciona'n unes quantes (<kbd>Ctrl</kbd>+clic o <kbd>Maj</kbd>+clic) i l'inspector mostra <b>només les propietats que tenen totes</b>. Un camp en blanc vol dir que tenen valors diferents; el que hi posis (<kbd>Retorn</kbd> o canviant de camp) s'aplica a totes. Amb <span class="tag">Numera</span> les tornes a numerar per ordre de llista amb un inici i un pas (10, 10.5, 11…).</p>
   <h3>Número, notes i tecla directa</h3>
   <ul class="list">
     <li>Cada cue té un <b>número lliure</b> («1», «1.5», «2A»…). Les noves en reben un automàticament. Si se'n repeteix un, surt un avís.</li>
@@ -170,7 +171,7 @@ pre{background:var(--code);border:1px solid var(--line);padding:12px 14px;border
     <li>Selecciona unes quantes cues (<kbd>Ctrl</kbd>+clic o <kbd>Maj</kbd>+clic) i prem <span class="tag">+ Grup</span> o <kbd>Ctrl</kbd>+<kbd>G</kbd>. Sense res seleccionat, crea un grup buit.</li>
     <li><b>Arrossega</b> una cue al mig d'una fila de grup (es marca tota en blau) i hi entra com a última fill. A la vora de dalt o de baix d'una fila, va davant o darrere d'aquella cue, al seu nivell.</li>
     <li>Una cue nova va després de la seleccionada i al mateix nivell.</li>
-    <li><span class="tag">⇤ Treu del grup</span> (panell de propietats) la treu i la deixa just després. <span class="tag">Desagrupa</span> treu el grup i deixa les cues a la llista.</li>
+    <li><span class="tag">⇤ Treu del grup</span> (a l'inspector) la treu i la deixa just després. <span class="tag">Desagrupa</span> treu el grup i deixa les cues a la llista.</li>
     <li>Moure o esborrar un grup el mou o l'esborra amb tot el que conté (Escena avisa abans d'esborrar).</li>
   </ul>
   <h3>Modes</h3>
@@ -210,7 +211,7 @@ pre{background:var(--code);border:1px solid var(--line);padding:12px 14px;border
   <p>Hi ha <b>dos cursors separats</b>:</p>
   <ul class="list">
     <li><span class="dot" style="background:var(--accent)"></span><b>En espera (▶ verd):</b> la cue que dispararà el proper GO. Es mou amb <kbd>↑</kbd> <kbd>↓</kbd>, doble clic, <kbd>Retorn</kbd> o <span class="tag">▶ Posa en espera</span>.</li>
-    <li><span class="dot" style="background:var(--accent2)"></span><b>Seleccionada (blau):</b> la que edites al panell de propietats. Clic o <kbd>Maj</kbd>+<kbd>↑</kbd><kbd>↓</kbd>. Pots editar mentre corre l'espectacle sense moure el GO.</li>
+    <li><span class="dot" style="background:var(--accent2)"></span><b>Seleccionada (blau):</b> la que edites a l'inspector, a sota de la llista. Clic o <kbd>Maj</kbd>+<kbd>↑</kbd><kbd>↓</kbd>. Pots editar mentre corre l'espectacle sense moure el GO.</li>
   </ul>
   <div class="note">Quan la llista s'ha acabat i no hi ha res en espera, un clic amb el ratolí sobre una cue també la posa en espera.</div>
   <h3>Llista <kbd>F5</kbd> · Botonera <kbd>F6</kbd></h3>
@@ -222,6 +223,21 @@ pre{background:var(--code);border:1px solid var(--line);padding:12px 14px;border
     <span class="dot" style="background:#7d8aa3"></span>en pausa &nbsp;
     <span class="dot" style="background:#e5534b"></span>error
   </p>
+  <h3>Inspector (propietats de la cue)</h3>
+  <p>Les propietats de la cue seleccionada són <b>a sota de la llista</b>, a tot l'ample, repartides en <b>pestanyes</b>: «General» (número, nom, notes, tecla directa, esperes i encadenament) i les del tipus de cue (per exemple, una cue d'àudio té «Fitxer i temps», «Nivells i foses» i «Sortides»). <kbd>Ctrl</kbd>+<kbd>Tab</kbd> i <kbd>Ctrl</kbd>+<kbd>Maj</kbd>+<kbd>Tab</kbd> canvien de pestanya, i Escena recorda l'última de cada tipus. L'alçada de l'inspector es pot arrossegar i es recorda.</p>
+  <p>A la llista, a la botonera i a l'inspector, cada tipus de cue té la seva <b>icona i color</b>, els mateixos que el botó d'afegir.</p>
+</section>
+
+<section id="funcio">
+  <h2>Mode funció <kbd>F9</kbd></h2>
+  <p>El cadenat de la barra, o <kbd>F9</kbd>, bloqueja l'espectacle per fer la funció. Torna a prémer per editar.</p>
+  <ul class="list">
+    <li><b>S'amaga:</b> els botons d'afegir, moure i esborrar, l'inspector, la comprovació, les eines, els ajustos i les sortides. La barra mostra l'avís «MODE FUNCIÓ».</li>
+    <li><b>No es pot fer:</b> esborrar, moure, enganxar, duplicar, agrupar, desfer, arrossegar cues ni deixar-hi fitxers, ni obrir un altre espectacle. Desar (<kbd>Ctrl</kbd>+<kbd>S</kbd>) sí.</li>
+    <li><b>Es veu en gran, a la dreta:</b> la cue en espera amb les seves notes, la que vindrà després, les cues en marxa amb el compte enrere i l'hora.</li>
+    <li><b>Continua igual:</b> GO, Esc, pànic, pausa, tecles directes, botonera, triar la cue en espera i els botons d'«En curs».</li>
+    <li>Tancar Escena en mode funció demana confirmació. El mode no es desa: Escena sempre s'obre en mode edició.</li>
+  </ul>
 </section>
 
 <section id="controls">
@@ -238,7 +254,10 @@ pre{background:var(--code);border:1px solid var(--line);padding:12px 14px;border
     <tr><td><kbd>↑</kbd><kbd>↓</kbd> · <kbd>Retorn</kbd> · doble clic</td><td>Mou la cue en espera · posa en espera la seleccionada.</td></tr>
     <tr><td><kbd>Maj</kbd>+<kbd>↑</kbd><kbd>↓</kbd></td><td>Canvia la seleccionada.</td></tr>
     <tr><td><kbd>Supr</kbd></td><td>Elimina la seleccionada.</td></tr>
-    <tr><td><kbd>Ctrl</kbd>+<kbd>↑</kbd><kbd>↓</kbd></td><td>Mou la seleccionada entre les del seu nivell.</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>↑</kbd><kbd>↓</kbd></td><td>Mou les seleccionades (una o diverses) entre les del seu nivell.</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>Z</kbd> · <kbd>Ctrl</kbd>+<kbd>Y</kbd></td><td>Desfà i refà l'edició de les cues (afegir, esborrar, moure, agrupar, enganxar i canviar propietats), fins a 100 passos. No atura el que sona. Les sortides i el volum general no en formen part.</td></tr>
+    <tr><td><kbd>F9</kbd></td><td>Entra i surt del mode funció.</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>Tab</kbd></td><td>Canvia de pestanya a l'inspector.</td></tr>
     <tr><td><kbd>Ctrl</kbd>+<kbd>G</kbd></td><td>Fa un grup amb les cues seleccionades.</td></tr>
     <tr><td><kbd>Ctrl</kbd>+<kbd>C</kbd> <kbd>X</kbd> <kbd>V</kbd> <kbd>D</kbd></td><td>Copia, retalla, enganxa i duplica les cues seleccionades (Ctrl+clic o Maj+clic per triar-ne diverses). Un grup es copia amb el que conté. S'enganxen després de l'última seleccionada, amb números nous si cal; les foses copiades amb la seva cue apunten a la còpia. Funciona entre espectacles i també des del botó dret de la llista.</td></tr>
     <tr><td>Arrossegar i deixar</td><td>Reordena, a la llista i a la botonera. Una línia blava marca on quedarà.</td></tr>

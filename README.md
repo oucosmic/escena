@@ -15,11 +15,11 @@ A **[Releases](https://github.com/oucosmic/escena/releases/latest)** hi ha el zi
 ## Què fa
 
 - **Cues:** àudio, vídeo, imatge, text (títols i sobretítols), micròfon, fosa, atura/pausa/reprèn, surt del bucle, espera i grups.
-- **En directe:** GO amb protecció de doble GO, cursor d'espera separat de la selecció, atura-ho tot, pànic de dos nivells, escoltar una cue sense tocar l'espectacle, vista de regidor.
+- **En directe:** GO amb protecció de doble GO, cursor d'espera separat de la selecció, atura-ho tot, pànic de dos nivells, escoltar una cue sense tocar l'espectacle, vista de regidor, mode funció (F9) que bloqueja l'edició.
 - **Àudio:** sortides WASAPI i ASIO, multicanal, matriu d'encaminament, enviaments, ducking, bucles dins del fitxer.
 - **Vídeo:** diverses pantalles, foses a negre, correcció de cantonades del projector, so del vídeo per la sortida que vulguis.
 - **Grups com al QLab:** línia de temps, llista, entra, primera i aleatòria.
-- **Edició:** copiar i enganxar, editar diverses cues alhora, arrossegar, tecles directes, comprovació abans de la funció, començar des d'un temps, registre d'assaig, empaquetar l'espectacle.
+- **Edició:** desfer i refer, inspector amb pestanyes, copiar i enganxar, editar diverses cues alhora, arrossegar, tecles directes, comprovació abans de la funció, començar des d'un temps, registre d'assaig, empaquetar l'espectacle.
 - **Exportar al QLab** (Mac) amb un AppleScript.
 - Interfície en català i en anglès. Còpia automàtica i recuperació si es tanca malament.
 
@@ -27,7 +27,7 @@ Manual complet: [LLEGEIX-ME.md](LLEGEIX-ME.md) (també surt com a `Instruccions.
 
 ## Estat
 
-Versió **0.7** (en desenvolupament). Encara no s'ha provat amb targetes multicanal i ASIO, micròfons en directe ni projectors reals: prova-ho bé abans de fer-lo servir en una funció.
+Versió **0.8** (en desenvolupament). Encara no s'ha provat amb targetes multicanal i ASIO, micròfons en directe ni projectors reals: prova-ho bé abans de fer-lo servir en una funció.
 
 ## Fet amb intel·ligència artificial
 

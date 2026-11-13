@@ -1,4 +1,4 @@
-# Escena 0.7 — reproductor de cues per a Windows
+# Escena 0.8 — reproductor de cues per a Windows
 
 Programa nou per a Windows inspirat en Linux Show Player. Reprodueix àudio, vídeo i imatges. No té llums ni MIDI. Programari lliure (GPL-3.0), fet amb l'ajuda d'IA (vegeu [README.md](README.md)).
 
@@ -218,6 +218,7 @@ Es desen com a fitxers `.show` (JSON). Les rutes dels sons es guarden **relative
 - Versió 0.6: exportació al QLab · so del vídeo per qualsevol sortida · copiar i enganxar cues · editar diverses cues alhora (vegeu [CHANGELOG.md](CHANGELOG.md)).
 
 - Versió 0.7: zoom a la forma d'ona · ordinador despert mentre Escena és obert · Atura/Pausa sobre la cue seleccionada.
+- Versió 0.8: mode funció (F9) · desfer i refer · inspector amb pestanyes a sota de la llista · icones i colors per tipus de cue · barra d'eines amb icones · moure diverses cues alhora · correccions de robustesa (vegeu [CHANGELOG.md](CHANGELOG.md)).
 
 **Encara no provat amb aparells reals:** targetes multicanal i ASIO, micròfon en directe (latència i acoblament), projector de veritat amb la correcció.
 

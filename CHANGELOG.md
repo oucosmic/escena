@@ -3,7 +3,7 @@
 Numeració: MAJOR.MENOR.CORRECCIÓ. Mentre el primer número sigui 0, Escena encara és en desenvolupament.
 La versió del format dels fitxers `.show` va a part (ara és la 5) i només canvia quan canvia com es desen els espectacles.
 
-## Pendent de publicar
+## 0.8.0 — 2026-11-13
 
 Novetats:
 
