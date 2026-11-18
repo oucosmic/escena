@@ -27,7 +27,7 @@ Manual complet: [LLEGEIX-ME.md](LLEGEIX-ME.md) (també surt com a `Instruccions.
 
 ## Estat
 
-Versió **0.8** (en desenvolupament). Encara no s'ha provat amb targetes multicanal i ASIO, micròfons en directe ni projectors reals: prova-ho bé abans de fer-lo servir en una funció.
+Versió **0.9** (en desenvolupament). Encara no s'ha provat amb targetes multicanal i ASIO, micròfons en directe ni projectors reals: prova-ho bé abans de fer-lo servir en una funció.
 
 ## Fet amb intel·ligència artificial
 

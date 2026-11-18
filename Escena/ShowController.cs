@@ -145,9 +145,31 @@ public sealed partial class ShowController : ObservableObject, IDisposable
             if (_standbyCue != null) _standbyCue.IsStandby = false;
             _standbyCue = value;
             if (value != null) value.IsStandby = true;
+            UpdateStandbyMarker();
             OnPropertyChanged();
             _sessionChanged = true;
         }
+    }
+
+    private Cue? _standbyMarker;
+
+    /// <summary>
+    /// Si la cue en espera és amagada dins d'un grup plegat, el grup visible que la conté porta la marca d'espera
+    /// (així el GO pot avançar per dins dels grups plegats sense que es perdi de vista on som).
+    /// </summary>
+    private void UpdateStandbyMarker()
+    {
+        Cue? marker = null;
+        if (_standbyCue is { IsHiddenByGroup: true } s && Cues.Contains(s))
+        {
+            var p = ShowTree.Parent(Cues, s);
+            for (int guard = 0; p is { IsHiddenByGroup: true } && guard < 64; guard++) p = ShowTree.Parent(Cues, p);
+            marker = p;
+        }
+        if (_standbyMarker == marker) return;
+        if (_standbyMarker != null) _standbyMarker.IsStandbyInside = false;
+        _standbyMarker = marker;
+        if (marker != null) marker.IsStandbyInside = true;
     }
 
     public LayoutMode Layout
@@ -543,6 +565,7 @@ public sealed partial class ShowController : ObservableObject, IDisposable
     {
         ShowTree.UpdateDepths(Cues);
         RebuildGroupMembers();
+        UpdateStandbyMarker();
     }
 
     private void OnCuesChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -588,12 +611,10 @@ public sealed partial class ShowController : ObservableObject, IDisposable
         {
             AfterTreeChange();
             VisibleCues.Refresh();
-            // Si la cue en espera o la seleccionada queden amagades, passen al grup.
-            if (sender is GroupCue g && g.IsCollapsed)
-            {
-                if (StandbyCue != null && ShowTree.IsDescendant(Cues, StandbyCue, g)) StandbyCue = g;
-                if (SelectedCue != null && ShowTree.IsDescendant(Cues, SelectedCue, g)) SelectedCue = g;
-            }
+            // Si la seleccionada queda amagada, passa al grup. La cue en espera no es mou (el GO ha de continuar
+            // per dins del grup): el grup plegat porta la marca d'espera.
+            if (sender is GroupCue g && g.IsCollapsed && SelectedCue != null && ShowTree.IsDescendant(Cues, SelectedCue, g))
+                SelectedCue = g;
         }
     }
 
@@ -641,7 +662,8 @@ public sealed partial class ShowController : ObservableObject, IDisposable
     {
         var visible = Cues.Where(c => !c.IsHiddenByGroup).ToList();
         if (visible.Count == 0) return;
-        int index = StandbyCue != null && visible.IndexOf(StandbyCue) is var i and >= 0 ? i + delta
+        var anchor = StandbyCue is { IsHiddenByGroup: true } ? _standbyMarker : StandbyCue; // amagada: compta des del grup plegat
+        int index = anchor != null && visible.IndexOf(anchor) is var i and >= 0 ? i + delta
             : delta < 0 ? visible.Count - 1 : 0; // al final de la llista, ↑ torna a l'última
         StandbyCue = visible[Math.Clamp(index, 0, visible.Count - 1)];
     }
@@ -650,6 +672,7 @@ public sealed partial class ShowController : ObservableObject, IDisposable
     /// La cue que queda en espera després de fer GO a <paramref name="cue"/>: la de després (saltant el contingut
     /// d'un grup); amb un grup «entra», la seva segona fill. Si la primera fill d'un grup «entra» també és un grup
     /// «entra», el GO hi entra (la que queda en espera és la segona fill del de dins, i així a tots els nivells).
+    /// Va per l'ordre de la llista encara que els grups estiguin plegats: plegar només amaga, no salta cues.
     /// </summary>
     private Cue? NextStandbyAfter(Cue cue)
     {
@@ -664,7 +687,6 @@ public sealed partial class ShowController : ObservableObject, IDisposable
             if (kids.Count > 1) return kids[1];
         }
         int next = cue is GroupCue ? ShowTree.SubtreeEnd(Cues, i) : i + 1;
-        while (next < Cues.Count && Cues[next].IsHiddenByGroup && cue is not GroupCue) next++;
         return next < Cues.Count ? Cues[next] : null;
     }
 

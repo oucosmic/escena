@@ -60,7 +60,7 @@ public abstract class Cue : ObservableObject
     /// <summary>Propietats d'execució o derivades: no marquen l'espectacle com a modificat.</summary>
     public static readonly HashSet<string> RuntimeProperties = new()
     {
-        nameof(Position), nameof(IsStandby), nameof(DisplayName), nameof(State), nameof(IsActive), nameof(IsPaused), nameof(Elapsed),
+        nameof(Position), nameof(IsStandby), nameof(IsStandbyInside), nameof(DisplayName), nameof(State), nameof(IsActive), nameof(IsPaused), nameof(Elapsed),
         nameof(Progress), nameof(StatusText), nameof(ErrorMessage), nameof(Duration), nameof(DurationText),
         nameof(NextActionText), nameof(TypeName), "FileDuration", "MemberCount", "HasIgnoredTarget", nameof(HasPendingLoop), "SourceChannels", "MatrixText", nameof(Depth), nameof(IsHiddenByGroup), nameof(HasParent), "IsCollapsed", "IsPlaylist", "ModeHint", "AudioOutputChoice",
     };
@@ -161,6 +161,10 @@ public abstract class Cue : ObservableObject
 
     /// <summary>És la cue en espera: la que dispararà el proper GO.</summary>
     [JsonIgnore] public bool IsStandby { get => _isStandby; set => Set(ref _isStandby, value); }
+
+    /// <summary>És un grup plegat i la cue en espera és amagada a dins (la llista hi posa la marca d'espera).</summary>
+    [JsonIgnore] public bool IsStandbyInside { get => _isStandbyInside; set => Set(ref _isStandbyInside, value); }
+    private bool _isStandbyInside;
 
     /// <summary>Està sonant dins d'un tros en bucle que espera «Surt del bucle».</summary>
     [JsonIgnore] public bool HasPendingLoop { get => _hasPendingLoop; set => Set(ref _hasPendingLoop, value); }

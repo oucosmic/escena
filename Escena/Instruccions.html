@@ -82,7 +82,7 @@ pre{background:var(--code);border:1px solid var(--line);padding:12px 14px;border
 <div class="layout">
 <nav>
   <div class="brand"><span class="logo">▶</span>Escena</div>
-  <div class="ver">Versió 0.8 · Instruccions</div>
+  <div class="ver">Versió 0.9 · Instruccions</div>
   <input id="q" type="search" placeholder="Cerca…" aria-label="Cerca a les instruccions">
   <ul id="toc">
     <li><a href="#inici">Per començar</a></li>
@@ -99,6 +99,7 @@ pre{background:var(--code);border:1px solid var(--line);padding:12px 14px;border
     <li><a href="#ducking">Ducking</a></li>
     <li><a href="#pantalles">Pantalles (vídeo)</a></li>
     <li><a href="#eines">Eines</a></li>
+    <li><a href="#remot">Control remot (mòbil)</a></li>
     <li><a href="#recuperacio">Còpia i recuperació</a></li>
     <li><a href="#ajustos">Ajustos</a></li>
     <li><a href="#espectacles">Fitxers d'espectacle</a></li>
@@ -141,12 +142,14 @@ pre{background:var(--code);border:1px solid var(--line);padding:12px 14px;border
     <div class="card"><h4>↘ Fosa</h4><p>Porta una cue a un volum i/o panorama en X segons, amb corba. Opcionalment l'atura. En vídeo i imatge també enfosqueix.</p></div>
     <div class="card"><h4>■ Atura · Pausa · Reprèn · Surt del bucle</h4><p>Sobre una cue destí o sobre totes les que sonen. Si en crear-la hi ha una cue seleccionada, actua sobre aquella (si és una fosa, sobre la cue de la fosa). En aturar, fosa de cada cue o una de fixa.</p></div>
     <div class="card"><h4>⏱ Espera</h4><p>Una pausa cronometrada. Amb «Segueix» fa seqüències automàtiques.</p></div>
+    <div class="card"><h4>🗒 Nota</h4><p>Marca parts de l'espectacle a la llista («Escena 1»…). No fa res i ve amb «Continua»: quan li arriba el GO passa sola a la següent.</p></div>
     <div class="card"><h4>📁 Grup</h4><p>Conté altres cues, sagnades a sota. Cinc modes. <a href="#grups">Vegeu Grups</a>.</p></div>
   </div>
   <h3>Corbes de fosa</h3>
   <p>Lineal · <b>exponencial</b> (passos iguals de dB, la que sona més regular) · en S · quadràtica (lenta al principi) · quadràtica inversa (ràpida al principi).</p>
   <h3>Editar diverses cues alhora</h3>
-  <p>Selecciona'n unes quantes (<kbd>Ctrl</kbd>+clic o <kbd>Maj</kbd>+clic) i l'inspector mostra <b>només les propietats que tenen totes</b>. Un camp en blanc vol dir que tenen valors diferents; el que hi posis (<kbd>Retorn</kbd> o canviant de camp) s'aplica a totes. Amb <span class="tag">Numera</span> les tornes a numerar per ordre de llista amb un inici i un pas (10, 10.5, 11…).</p>
+  <p>Selecciona'n unes quantes (<kbd>Ctrl</kbd>+clic o <kbd>Maj</kbd>+clic) i l'inspector mostra <b>només les propietats que tenen totes</b>. Un camp en blanc vol dir que tenen valors diferents; el que hi posis (<kbd>Retorn</kbd> o canviant de camp) s'aplica a totes. Amb <span class="tag">Numera</span> les tornes a numerar per ordre de llista amb un inici i un pas (10, 10.5, 11…). Amb cues d'àudio i vídeo, <span class="tag">Iguala</span> les deixa totes al mateix nivell de volum (per defecte -20 dB) sense que cap saturi; es desfà amb <kbd>Ctrl</kbd>+<kbd>Z</kbd>.</p>
+  <p>Quan canvies el nom d'una cue, les foses i les Atura/Pausa que hi apunten i porten el nom entre «» passen a portar el nou.</p>
   <h3>Número, notes i tecla directa</h3>
   <ul class="list">
     <li>Cada cue té un <b>número lliure</b> («1», «1.5», «2A»…). Les noves en reben un automàticament. Si se'n repeteix un, surt un avís.</li>
@@ -324,6 +327,36 @@ pre{background:var(--code);border:1px solid var(--line);padding:12px 14px;border
     <div class="card"><h4>Empaqueta l'espectacle</h4><p>Copia l'espectacle i tots els fitxers a una carpeta (a «Fitxers\»). Després treballes amb la còpia.</p></div>
     <div class="card"><h4>Importa sobretítols</h4><p>Un fitxer de text: cada bloc separat per una línia en blanc es converteix en una cue de text a baix. Cada GO en mostra un.</p></div>
   </div>
+  <h3 id="guio-tecnic">Guió tècnic (CSV o .md)</h3>
+  <p>Eines ▾ → «Importa guió tècnic (CSV o .md)…» munta l'espectacle a partir d'una llista de cues. Pot ser un full de càlcul (CSV) o un fitxer de l'Obsidian (.md):</p>
+  <ul class="list">
+    <li><b>.md:</b> un títol <code>##</code> per escena i, a sota, una taula amb les cues. Cada taula porta les columnes que necessita, per exemple <code>| Núm | Tipus | Nom | Entrada | Fitxer | Notes |</code>.</li>
+    <li><b>CSV:</b> una fila per cue, amb aquesta capçalera:</li>
+  </ul>
+  <p><code>Escena;Núm;Tipus;Nom;Entrada;Fitxer;Destí;Volum;Fosa entrada;Fosa sortida;Temps;Bucle;Després;Notes</code></p>
+  <table>
+    <tr><th>Columna</th><th>Què hi va</th></tr>
+    <tr><td>Tipus</td><td style="white-space:normal;font-weight:400"><code>so</code>, <code>vídeo</code>, <code>imatge</code>, <code>text</code>, <code>fosa</code>, <code>atura</code>, <code>pausa</code>, <code>espera</code>, <code>nota</code> o <code>llum</code>. Escena no controla els llums: una cue <code>llum</code> es converteix en una Nota «Llum · …».</td></tr>
+    <tr><td>Entrada</td><td style="white-space:normal;font-weight:400">Quan es dispara (la rèplica o l'acció). Va a les notes de la cue.</td></tr>
+    <tr><td>Fitxer</td><td style="white-space:normal;font-weight:400">Ruta relativa a la carpeta del CSV, o absoluta.</td></tr>
+    <tr><td>Destí</td><td style="white-space:normal;font-weight:400">Per a fosa, atura i pausa: número o nom de la cue. Una fosa sense destí s'aplica a l'última cue de so de les files d'abans.</td></tr>
+    <tr><td>Després</td><td style="white-space:normal;font-weight:400">Buit o <code>GO</code>: espera el GO. <code>continua</code>: dispara alhora la següent. <code>segueix</code>: dispara la següent quan aquesta acaba.</td></tr>
+    <tr><td>Escena</td><td style="white-space:normal;font-weight:400">Al CSV, l'escena de cada fila. Al .md és el títol de sobre la taula. Quan canvia, s'hi posa una Nota amb el nom de l'escena.</td></tr>
+  </table>
+  <p>Si l'espectacle ja té cues, cada fila busca la seva cue pel número o, si no en té, pel nom.</p>
+  <ul class="list">
+    <li>Si la troba, l'actualitza només amb les columnes que no són buides.</li>
+    <li>Si no la troba, la crea després de la cue de la fila anterior.</li>
+    <li>Les cues que el CSV no esmenta no es toquen.</li>
+  </ul>
+  <p>Accepta punt i coma o coma, UTF-8 o el CSV de l'Excel en català, i coma o punt decimal. Tot plegat es desfà amb un sol <kbd>Ctrl</kbd>+<kbd>Z</kbd>. «Exporta guió tècnic (CSV o .md)…» fa el camí invers.</p>
+  <div class="note">Des de la línia d'ordres, sense obrir la finestra (el guió tècnic pot ser <code>.csv</code> o <code>.md</code>):
+    <ul class="list">
+      <li><code>Escena.exe --importa-guio guio.md espectacle.show</code> crea l'espectacle o l'actualitza, i en deixa una còpia <code>.bak</code>.</li>
+      <li><code>Escena.exe --exporta-guio espectacle.show guio.md</code> escriu el guió tècnic de l'espectacle.</li>
+      <li><code>Escena.exe --converteix-guio guio.md guio.csv</code> passa d'un format a l'altre.</li>
+    </ul>
+  </div>
   <h3 id="qlab">Exporta al QLab (Mac)</h3>
   <p>Eines ▾ → «Exporta al QLab (Mac)…» crea una carpeta <code>‹espectacle› (QLab)</code> amb:</p>
   <ul class="list">
@@ -338,6 +371,24 @@ pre{background:var(--code);border:1px solid var(--line);padding:12px 14px;border
         <td>Sortides i matriu, enviaments, ducking, panorama, tecles directes, corbes de fosa, correcció del projector.</td></tr>
   </table>
   <div class="note warn">Encara no s'ha provat en un Mac amb QLab. Si el QLab no accepta alguna cosa, l'script continua i ho diu al final.</div>
+</section>
+
+<section id="remot">
+  <h2>Control remot des del mòbil</h2>
+  <p>Eines ▾ → «Control remot des del mòbil…». Fes GO, atura i tria la cue en espera des del navegador d'un mòbil o una tauleta (Android o iPhone). No cal instal·lar res.</p>
+  <ol class="list">
+    <li>Marca <b>Activa el control remot</b>. Surt un codi QR, l'adreça (p. ex. <code>http://192.168.1.20:8686/</code>) i un PIN.</li>
+    <li>Amb el mòbil a la <b>mateixa wifi</b>, llegeix el QR amb la càmera. Entra directament, sense escriure el PIN.</li>
+    <li>Opcional: a Chrome, ⋮ → «Afegeix a la pantalla d'inici» hi posa una icona d'Escena.</li>
+  </ol>
+  <div class="cards">
+    <div class="card"><h4>Al mòbil</h4><p>La cue que sona i el temps que li queda. La cue en espera amb les notes, i ▲▼ per moure-la. GO gran, Pausa/Reprèn. El volum general, amb un control lliscant i − / + de dB en dB (el mateix de la barra d'Escena). La llista de cues: en toques una i queda en espera.</p></div>
+    <div class="card"><h4>Atura-ho tot · PÀNIC</h4><p>Cal mantenir-los premuts mig segon, perquè no es premin sense voler. Un segon toc talla de cop, com a l'ordinador.</p></div>
+    <div class="card"><h4>Sense connexió</h4><p>Si la wifi falla, el mòbil ho diu en vermell, desactiva el GO i es torna a connectar sol.</p></div>
+    <div class="card"><h4>Seguretat</h4><p>Només funciona a la xarxa local i amb PIN. Després de 5 PIN dolents, aquell aparell queda bloquejat 30 s. Ve desactivat de fàbrica. «PIN nou» deixa fora els mòbils connectats.</p></div>
+  </div>
+  <p>A la barra d'eines, 📱 indica quants mòbils hi ha connectats. Un clic obre la finestra amb el QR.</p>
+  <div class="note">La primera vegada, Windows pot preguntar pel tallafocs: permet l'accés a les xarxes privades. Si el mòbil no hi arriba, comprova que la xarxa de Windows no estigui com a «pública», o prova una de les altres adreces que mostra la finestra. Per a la funció, la tecla d'espai de l'ordinador continua sent la manera més segura.</div>
 </section>
 
 <section id="recuperacio">

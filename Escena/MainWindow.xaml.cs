@@ -35,6 +35,41 @@ public partial class MainWindow : Window
         Loaded += OnLoaded;
         // Que Windows no adormi l'ordinador ni apagui la pantalla mentre hi ha un espectacle obert.
         PowerGuard.Apply(_show.MachineSettings.KeepAwake);
+        StartRemote();
+    }
+
+    // ---------------- Control remot des del mòbil ----------------
+
+    private Escena.Remote.RemoteServer? _remote;
+
+    private void StartRemote()
+    {
+        _remote = new Escena.Remote.RemoteServer(_show);
+        _remote.ClientsChanged += UpdateRemoteButton;
+        var s = _show.MachineSettings;
+        if (s.RemoteEnabled && !string.IsNullOrEmpty(s.RemotePin))
+        {
+            try { _remote.Start(s.RemotePort, s.RemotePin); }
+            catch (System.Net.Sockets.SocketException ex)
+            {
+                _show.Status = string.Format(L.T("Control remot: no s'ha pogut obrir el port {0} ({1})."), s.RemotePort, ex.Message);
+            }
+        }
+        UpdateRemoteButton();
+    }
+
+    private void UpdateRemoteButton()
+    {
+        if (_remote == null) return;
+        RemoteButton.Visibility = _remote.IsRunning ? Visibility.Visible : Visibility.Collapsed;
+        RemoteCount.Text = _remote.ClientCount.ToString();
+    }
+
+    private void Remote_Click(object sender, RoutedEventArgs e)
+    {
+        if (_remote == null) return;
+        new Escena.Remote.RemoteWindow(_remote, _show) { Owner = this }.ShowDialog();
+        UpdateRemoteButton();
     }
 
     private void OnLoaded(object sender, RoutedEventArgs e)
@@ -288,6 +323,50 @@ public partial class MainWindow : Window
                 "Escena", MessageBoxButton.YesNo, r.Missing > 0 ? MessageBoxImage.Warning : MessageBoxImage.Information);
             if (answer == MessageBoxResult.Yes)
                 System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(r.Folder) { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, L.T("No s'ha pogut exportar:") + "\n\n" + ex.Message, "Escena", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    /// <summary>Guió tècnic en CSV: crea les cues que falten i actualitza (notes, fitxers, valors) les que ja hi són.</summary>
+    private void ImportCueSheet_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new OpenFileDialog
+        {
+            Title = L.T("Importa guió tècnic"),
+            Filter = L.T("Guió tècnic (*.csv, *.md)") + "|*.csv;*.md|" + L.T("Tots els fitxers") + "|*.*",
+            InitialDirectory = _show.FilePath != null ? Path.GetDirectoryName(_show.FilePath) : null,
+        };
+        if (dialog.ShowDialog(this) != true) return;
+        try
+        {
+            var report = _show.ImportCueSheet(dialog.FileName);
+            MessageBox.Show(this, L.T("Guió tècnic importat.") + "\n\n" + report.Summary() + "\n\n" + L.T("Es pot desfer amb Ctrl+Z."),
+                "Escena", MessageBoxButton.OK, report.Warnings.Count > 0 ? MessageBoxImage.Warning : MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, L.T("No s'ha pogut importar el guió tècnic:") + "\n\n" + ex.Message, "Escena", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void ExportCueSheet_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new SaveFileDialog
+        {
+            Title = L.T("Exporta guió tècnic"),
+            Filter = L.T("Guió tècnic (*.csv)") + "|*.csv|" + L.T("Guió tècnic per a l'Obsidian (*.md)") + "|*.md",
+            DefaultExt = ".csv",
+            FileName = (_show.FilePath != null ? Path.GetFileNameWithoutExtension(_show.FilePath) : "Espectacle") + " - guió tècnic.csv",
+            InitialDirectory = _show.FilePath != null ? Path.GetDirectoryName(_show.FilePath) : null,
+        };
+        if (dialog.ShowDialog(this) != true) return;
+        try
+        {
+            _show.ExportCueSheet(dialog.FileName);
+            _show.Status = L.T("Guió tècnic exportat:") + " " + dialog.FileName;
         }
         catch (Exception ex)
         {
@@ -1142,6 +1221,7 @@ public partial class MainWindow : Window
             e.Cancel = true;
             return;
         }
+        _remote?.Dispose();
         _show.Dispose();
     }
 }

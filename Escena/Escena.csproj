@@ -8,7 +8,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>Escena</AssemblyName>
     <RootNamespace>Escena</RootNamespace>
-    <Version>0.8.0</Version>
+    <Version>0.9.0</Version>
     <!-- Sense el codi del commit enganxat al número de versió -->
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <Product>Escena</Product>
@@ -44,6 +44,7 @@
   <ItemGroup>
     <Resource Include="Escena.ico" />
     <EmbeddedResource Include="Lang\*.json" LogicalName="Escena.Lang.%(Filename).json" />
+    <EmbeddedResource Include="Remote\remote.html" LogicalName="Escena.Remote.remote.html" />
   </ItemGroup>
 
   <ItemGroup>

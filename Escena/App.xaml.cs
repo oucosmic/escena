@@ -16,6 +16,9 @@ public partial class App : Application
         // Idioma de la interfície (abans de crear cap finestra).
         L.Init(AppSettings.Load().Language);
 
+        // Guió tècnic des de la línia d'ordres: es fa la feina i es tanca, sense finestra.
+        if (CueSheetCli.Handles(e.Args)) Environment.Exit(CueSheetCli.Run(e.Args));
+
         // Enmig d'una funció, millor avisar que tancar el programa.
         DispatcherUnhandledException += (_, args) =>
         {

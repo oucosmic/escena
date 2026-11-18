@@ -701,6 +701,14 @@
         <Border Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1" Padding="6,4">
             <DockPanel>
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                    <!-- Control remot actiu: quants mòbils hi ha connectats -->
+                    <Button x:Name="RemoteButton" Visibility="Collapsed" Click="Remote_Click" Margin="0,0,6,0"
+                            ToolTip="Control remot des del mòbil&#x0a;Nombre de mòbils connectats. Clic per veure el codi QR i el PIN.">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="📱"/>
+                            <TextBlock x:Name="RemoteCount" Text="0" Margin="4,0,0,0"/>
+                        </StackPanel>
+                    </Button>
                     <Button Style="{StaticResource IconButton}" Content="&#xEA37;" Click="ListLayout_Click" ToolTip="Vista de llista (F5)"/>
                     <Button Style="{StaticResource IconButton}" Content="&#xF0E2;" Click="CartLayout_Click" ToolTip="Vista de botonera (F6)&#x0a;Un clic dispara la cue; si ja sona, l'atura."/>
                     <Button Style="{StaticResource IconButton}" Content="&#xE72E;" Click="ShowMode_Click"
@@ -709,15 +717,19 @@
                     <Rectangle Width="1" Fill="{StaticResource BorderBrush}" Margin="8,4"/>
                     <Button Style="{StaticResource IconButton}" Content="&#xE9D5;" Click="Check_Click" ToolTip="Comprova abans de la funció&#x0a;Fitxers que falten, sortides, cues buides, encadenaments…"/>
                     <Button Style="{StaticResource IconButton}" Content="&#xE90F;" Click="Tools_Click"
-                            ToolTip="Eines&#x0a;Comença des de…, registre d'assaig, vista de regidor, empaqueta, sobretítols, exporta al QLab">
+                            ToolTip="Eines&#x0a;Comença des de…, registre d'assaig, vista de regidor, control remot, empaqueta, sobretítols, guió tècnic (CSV), exporta al QLab">
                         <Button.ContextMenu>
                             <ContextMenu>
                                 <MenuItem Header="Comença des de… (assaig)" Click="StartFrom_Click"/>
                                 <MenuItem Header="Registre d'assaig" Click="Log_Click"/>
                                 <MenuItem Header="Vista de regidor" Click="Stage_Click"/>
+                                <MenuItem Header="Control remot des del mòbil…" Click="Remote_Click"/>
                                 <Separator/>
                                 <MenuItem Header="Empaqueta l'espectacle (copia tots els fitxers)…" Click="Pack_Click"/>
                                 <MenuItem Header="Importa sobretítols d'un fitxer de text…" Click="ImportSurtitles_Click"/>
+                                <Separator/>
+                                <MenuItem Header="Importa guió tècnic (CSV o .md)…" Click="ImportCueSheet_Click"/>
+                                <MenuItem Header="Exporta guió tècnic (CSV o .md)…" Click="ExportCueSheet_Click"/>
                                 <Separator/>
                                 <MenuItem Header="Exporta al QLab (Mac)…" Click="ExportQLab_Click"/>
                             </ContextMenu>
@@ -865,6 +877,9 @@
                             <DataTrigger Binding="{Binding IsStandby}" Value="True">
                                 <Setter Property="Background" Value="#1B3A26"/>
                             </DataTrigger>
+                            <DataTrigger Binding="{Binding IsStandbyInside}" Value="True">
+                                <Setter Property="Background" Value="#1B3A26"/>
+                            </DataTrigger>
                             <DataTrigger Binding="{Binding State}" Value="PreWait">
                                 <Setter Property="Background" Value="#5C4B12"/>
                             </DataTrigger>
@@ -887,8 +902,12 @@
                     <DataGridTemplateColumn Width="26">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBlock Text="▶" Foreground="#4CC26F" FontWeight="Bold" ToolTip="En espera: la dispara el proper GO"
-                                           Visibility="{Binding IsStandby, Converter={StaticResource BoolToVis}}"/>
+                                <Grid>
+                                    <TextBlock Text="▶" Foreground="#4CC26F" FontWeight="Bold" ToolTip="En espera: la dispara el proper GO"
+                                               Visibility="{Binding IsStandby, Converter={StaticResource BoolToVis}}"/>
+                                    <TextBlock Text="▷" Foreground="#4CC26F" FontWeight="Bold" ToolTip="La cue en espera és dins d'aquest grup plegat"
+                                               Visibility="{Binding IsStandbyInside, Converter={StaticResource BoolToVis}}"/>
+                                </Grid>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
@@ -981,6 +1000,8 @@
                                                        Foreground="#F0B429" Margin="0,0,6,0"/>
                                             <TextBlock Text="▶ " Foreground="#4CC26F" FontWeight="Bold"
                                                        Visibility="{Binding IsStandby, Converter={StaticResource BoolToVis}}"/>
+                                            <TextBlock Text="▷ " Foreground="#4CC26F" FontWeight="Bold" ToolTip="La cue en espera és dins d'aquest grup plegat"
+                                                       Visibility="{Binding IsStandbyInside, Converter={StaticResource BoolToVis}}"/>
                                             <TextBlock Text="↳ " Foreground="{StaticResource MutedBrush}" ToolTip="És dins d'un grup"
                                                        Visibility="{Binding HasParent, Converter={StaticResource BoolToVis}}"/>
                                             <TextBlock Text="{Binding Number}" FontWeight="Bold" Foreground="{StaticResource MutedBrush}"/>

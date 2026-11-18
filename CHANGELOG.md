@@ -3,6 +3,20 @@
 Numeració: MAJOR.MENOR.CORRECCIÓ. Mentre el primer número sigui 0, Escena encara és en desenvolupament.
 La versió del format dels fitxers `.show` va a part (ara és la 5) i només canvia quan canvia com es desen els espectacles.
 
+## 0.9.0 — 2026-11-18
+
+Novetats:
+
+- **Control remot des del mòbil:** «Eines → Control remot des del mòbil…» obre un servidor web a la xarxa local amb codi QR i PIN. Des del navegador del mòbil o la tauleta es fa GO, Pausa, Atura-ho tot i Pànic (aquests dos mantenint-los premuts), es tria la cue en espera, es canvia el volum general i es veu el que sona, la cue en espera amb les seves notes i la llista de cues. No cal instal·lar res.
+- **Guió tècnic (CSV o .md):** «Eines → Importa guió tècnic…» munta o actualitza l'espectacle a partir d'una llista de cues (escena, número, tipus, nom, entrada, fitxer, destí, volum, foses, temps, bucle, què passa després i notes). Pot ser un full de càlcul o un `.md` de l'Obsidian, amb un títol per escena i una taula de cues a sota. «Exporta guió tècnic…» fa el camí invers. També des de la línia d'ordres: `Escena.exe --importa-guio`, `--exporta-guio` i `--converteix-guio` (.md ↔ .csv).
+- **Cue Nota:** no fa res i passa sola a la següent; serveix per marcar parts de l'espectacle.
+- **Iguala el volum** de diverses cues d'àudio i vídeo seleccionades (nivell mitjà en dB, sense saturar).
+- En canviar el nom d'una cue, les foses i Atura/Pausa que hi apunten actualitzen el nom.
+
+Correccions:
+
+- El GO entra als grups «Entra» que hi ha dins d'altres grups.
+
 ## 0.8.0 — 2026-11-13
 
 Novetats:

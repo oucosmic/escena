@@ -1,4 +1,4 @@
-# Escena 0.8 — reproductor de cues per a Windows
+# Escena 0.9 — reproductor de cues per a Windows
 
 Programa nou per a Windows inspirat en Linux Show Player. Reprodueix àudio, vídeo i imatges. No té llums ni MIDI. Programari lliure (GPL-3.0), fet amb l'ajuda d'IA (vegeu [README.md](README.md)).
 
@@ -138,7 +138,62 @@ El botó del cadenat de la barra, o **F9**, bloqueja l'espectacle per fer la fun
 - **Vista de regidor:** finestra a part amb lletra gran: la cue en curs, el temps que li queda, la següent i les seves notes, i el rellotge. F11 = pantalla completa, F10 = la mou a la pantalla següent. Espai fa GO també des d'aquí.
 - **Empaqueta l'espectacle:** tries una carpeta i hi copia l'espectacle i tots els fitxers (a «Fitxers\»). A partir d'aquí treballes amb la còpia, que pots portar sencera a un altre ordinador.
 - **Importa sobretítols:** un fitxer de text on cada bloc separat per una línia en blanc es converteix en una cue de text a baix de la pantalla. Cada GO en mostra un i treu l'anterior.
+- **Importa guió tècnic (CSV o .md):** una fila per cue, amb aquestes columnes: `Escena;Núm;Tipus;Nom;Entrada;Fitxer;Destí;Volum;Fosa entrada;Fosa sortida;Temps;Bucle;Després;Notes`.
+  - **CSV:** un full de càlcul amb totes les columnes que calguin.
+  - **.md (Obsidian):** cada taula que té les columnes «Tipus» i «Nom» és un tros del guió tècnic. El títol `##` que té a sobre és l'escena de les seves files.
+    - Cada taula porta només les columnes que necessita.
+    - Els blocs de codi i les altres taules no compten.
+    - Es treu el format de les cel·les. `\|` és una barra dins la cel·la, i `<br>` un salt de línia.
+  - **Tipus:** `so`, `vídeo`, `imatge`, `text`, `fosa`, `atura`, `pausa`, `espera`, `nota` i `llum`. Una cue `llum` es converteix en una Nota «Llum · …».
+  - **Cerca:** cada fila busca la seva cue pel número o, si no en té, pel nom.
+    - Si la troba, l'actualitza només amb les columnes que no són buides.
+    - Si no la troba, la crea després de la cue de la fila anterior.
+  - **Entrada:** va a les notes de la cue («Entrada: …»).
+  - **Escena:** quan canvia la columna, s'hi posa una Nota amb el nom de l'escena.
+  - **Format:** accepta punt i coma o coma, UTF-8 o el CSV de l'Excel en català, i coma o punt decimal.
+  - **Desfer:** tot plegat es desfà amb un sol Ctrl+Z.
+  - **Exporta guió tècnic (CSV o .md):** fa el camí invers. En `.md`, cada escena surt amb el seu títol i només hi ha les columnes que es fan servir.
+  - **Línia d'ordres, sense obrir la finestra** (el guió tècnic pot ser `.csv` o `.md`):
+    - `Escena.exe --importa-guio guio.md espectacle.show` crea l'espectacle o l'actualitza, i en deixa una còpia `.bak`.
+    - `Escena.exe --exporta-guio espectacle.show guio.md` escriu el guió tècnic de l'espectacle.
+    - `Escena.exe --converteix-guio guio.md guio.csv` passa d'un format a l'altre, en tots dos sentits.
+  - **Codi:** és a `Escena\CueSheet\`.
 - **Exporta al QLab (Mac):** crea una carpeta «‹espectacle› (QLab)» amb `media\` (tots els fitxers), `Importa a QLab.applescript` i `Informe QLab.txt`. Al Mac: obre el QLab 5 amb un espai de treball, fes doble clic a l'script i prem ▶ a l'Editor de Scripts. Les cues es creen al final de la llista: números, noms, notes, esperes, Continua/Segueix, fitxers, volums, inici/final, bucles i slices, textos, foses, aturades, pauses, Devamp, esperes i grups amb el seu mode. La fosa d'entrada i el temps en pantalla es fan amb un grup «Timeline». El que no es pot traslladar (sortides i matriu, enviaments, ducking, panorama, tecles directes, corbes, correcció del projector) surt a l'informe. Si el QLab no accepta alguna propietat, l'script continua i ho diu al final. El codi és a part, a `Escena\QLab\QLabExporter.cs`. **No s'ha provat encara en un Mac amb QLab.**
+
+## Control remot des del mòbil
+
+Amb **Eines → Control remot des del mòbil…** pots fer GO, aturar i triar la cue en espera des del navegador d'un mòbil o una tauleta (Android o iPhone), sense instal·lar res.
+
+**Com es connecta**
+- Activa el control remot. Escena obre un petit servidor web a la xarxa local (port 8686) i mostra un **codi QR**, l'adreça i un **PIN** de 4 xifres.
+- Amb el mòbil a la mateixa wifi, llegeix el QR i entra directament. Si escrius l'adreça a mà, cal posar-hi el PIN.
+- El mòbil recorda el PIN. A Chrome, «Afegeix a la pantalla d'inici» hi posa una icona d'Escena.
+
+**El comandament**
+- La cue que **sona**, amb el temps que li queda.
+- La cue **en espera**, amb les seves notes (l'«Entrada: …» del guió tècnic) i ▲▼ per moure-la.
+- Un **GO** gran, i **Pausa/Reprèn**.
+- **Atura-ho tot** i **PÀNIC**: s'han de mantenir premuts mig segon, i un segon toc talla de cop.
+- El **volum general**, amb un control lliscant i − / + de dB en dB. És el mateix volum que la barra d'Escena: de −60 a +6 dB, i en vermell quan passa de 0.
+- Les altres cues que sonen.
+- La llista de cues: en toques una i queda en espera.
+- Amb un teclat connectat al mòbil, espai o Retorn també fan GO.
+- Si es perd la connexió, el mòbil ho diu en vermell, desactiva el GO i es torna a connectar sol.
+
+**A Escena**
+- A la barra d'eines surt 📱 amb el nombre de mòbils connectats.
+- La protecció de doble GO també val per al mòbil.
+- Es pot canviar el port i fer un PIN nou. Quan fas un PIN nou, els mòbils connectats queden fora.
+
+**Seguretat**
+- Només s'hi pot connectar des de la xarxa local, i cal el PIN. Després de 5 PIN dolents, aquell aparell queda bloquejat 30 s.
+- Ve desactivat de fàbrica, i l'estat (actiu o no) es recorda en aquest ordinador.
+- La primera vegada, Windows pot demanar permís al tallafocs: permet-ho per a les xarxes privades.
+
+**Coses a tenir en compte**
+- Si el mòbil no hi arriba, potser la xarxa de Windows està com a «pública». La finestra també mostra les altres adreces de l'ordinador, per si en té més d'una.
+- Per a la funció, la tecla d'espai de l'ordinador continua sent la manera més segura.
+- El codi és a `Escena\Remote\` (servidor, pàgina i generador de QR propi, sense biblioteques).
 
 ## Idioma
 
@@ -222,6 +277,7 @@ Es desen com a fitxers `.show` (JSON). Les rutes dels sons es guarden **relative
 
 - Versió 0.7: zoom a la forma d'ona · ordinador despert mentre Escena és obert · Atura/Pausa sobre la cue seleccionada.
 - Versió 0.8: mode funció (F9) · desfer i refer · inspector amb pestanyes a sota de la llista · icones i colors per tipus de cue · barra d'eines amb icones · moure diverses cues alhora · correccions de robustesa (vegeu [CHANGELOG.md](CHANGELOG.md)).
+- Versió 0.9: control remot des del mòbil (amb codi QR i PIN) · importar i exportar el guió tècnic (CSV o .md) · cue Nota · igualar el volum de diverses cues · grups dins de grups amb el GO entrant a tots els nivells.
 
 **Encara no provat amb aparells reals:** targetes multicanal i ASIO, micròfon en directe (latència i acoblament), projector de veritat amb la correcció.
 

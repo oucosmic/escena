@@ -81,6 +81,14 @@ public sealed class AppSettings
     /// <summary>Alçada de l'inspector (les propietats, a sota de la llista), tal com l'ha deixat l'usuari.</summary>
     public double InspectorHeight { get; set; } = 250;
 
+    /// <summary>Control remot des del mòbil (servidor web a la xarxa local). Desactivat de fàbrica.</summary>
+    public bool RemoteEnabled { get; set; }
+
+    public int RemotePort { get; set; } = 8686;
+
+    /// <summary>PIN que cal escriure al mòbil (4 xifres; es crea la primera vegada que s'activa).</summary>
+    public string RemotePin { get; set; } = "";
+
     private static string FilePath => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Escena", "ajustos.json");
 

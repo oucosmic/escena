@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="{{LANG}}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#1B1C20">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="/manifest.json">
+<title>Escena</title>
+<style>
+  :root {
+    --bg: #1B1C20; --panel: #24262B; --input: #15161A; --border: #3A3D44;
+    --text: #E8E8EA; --muted: #9BA0A8; --accent: #3D7BD9;
+    --go: #2E9E5B; --go-press: #23804A; --stop: #B8860B; --panic: #C0392B; --warn: #8A5A00;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  body { display: flex; flex-direction: column; padding: max(10px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
+    gap: 10px; user-select: none; -webkit-user-select: none; overscroll-behavior: none; }
+  header { display: flex; align-items: center; gap: 8px; min-height: 28px; }
+  #show { flex: 1; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--panic); flex: none; }
+  .dot.on { background: var(--go); }
+  .badge { background: var(--warn); color: #fff; border-radius: 4px; padding: 2px 8px; font-size: 12px; font-weight: 700; display: none; }
+  .badge.show { display: inline-block; }
+  .box { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; }
+  .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+  #current { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+  #curName { font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #curTime { font-size: 26px; font-variant-numeric: tabular-nums; font-weight: 600; flex: none; }
+  #standby { display: flex; align-items: center; gap: 8px; }
+  #standby .main { flex: 1; min-width: 0; }
+  #sbName { font-size: 22px; font-weight: 700; margin-top: 2px; word-break: break-word; }
+  #sbNotes { color: #F2D27A; font-size: 15px; margin-top: 4px; white-space: pre-wrap; word-break: break-word; max-height: 4.6em; overflow: auto; }
+  .nav { width: 52px; height: 52px; border-radius: 10px; border: 1px solid var(--border); background: var(--input); color: var(--text); font-size: 22px; flex: none; }
+  .nav:active { background: var(--border); }
+  #go { flex: 1; min-height: 150px; border: none; border-radius: 16px; background: var(--go); color: #fff;
+    font-size: 64px; font-weight: 800; letter-spacing: .05em; box-shadow: 0 4px 0 #1a6b3c; }
+  #go:active { background: var(--go-press); transform: translateY(2px); box-shadow: 0 2px 0 #1a6b3c; }
+  #go:disabled { background: #3a3d44; color: #777; box-shadow: none; }
+  .row { display: flex; gap: 8px; }
+  .row button { flex: 1; min-height: 58px; border-radius: 12px; border: 1px solid var(--border); background: var(--panel); color: var(--text);
+    font-size: 16px; font-weight: 600; position: relative; overflow: hidden; }
+  .row button:disabled { opacity: .4; }
+  .hold .fill { position: absolute; inset: 0; transform-origin: left; transform: scaleX(0); opacity: .45; }
+  .hold.holding .fill { transform: scaleX(1); transition: transform .5s linear; }
+  #stop .fill { background: var(--stop); }
+  #panic { color: #ffb4aa; }
+  #panic .fill { background: var(--panic); }
+  .hold span { position: relative; }
+  .hint { color: var(--muted); font-size: 12px; text-align: center; margin-top: -4px; }
+  .vol-head { display: flex; justify-content: space-between; align-items: baseline; }
+  #masterVal { font-variant-numeric: tabular-nums; font-size: 17px; }
+  #masterVal.hot { color: #ffb4aa; }
+  .vol { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
+  .vol .nav { width: 48px; height: 48px; font-size: 26px; }
+  #master { flex: 1; height: 44px; accent-color: var(--accent); touch-action: none; }
+  #active { display: flex; flex-direction: column; gap: 6px; }
+  .act { background: var(--input); border-radius: 8px; padding: 6px 10px; position: relative; overflow: hidden; }
+  .act .bar { position: absolute; left: 0; top: 0; bottom: 0; background: rgba(61,123,217,.25); }
+  .act .t { position: relative; display: flex; justify-content: space-between; gap: 8px; font-size: 14px; }
+  .act .t b { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .act.paused .t { color: var(--muted); }
+  details { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; }
+  summary { padding: 12px; font-weight: 600; list-style: none; }
+  summary::-webkit-details-marker { display: none; }
+  summary::after { content: " ▾"; color: var(--muted); }
+  #list { max-height: 45vh; overflow: auto; border-top: 1px solid var(--border); }
+  .cue { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid #2c2e34; font-size: 15px; }
+  .cue .sw { width: 6px; align-self: stretch; border-radius: 3px; flex: none; }
+  .cue .n { color: var(--muted); min-width: 2.5em; font-variant-numeric: tabular-nums; }
+  .cue .nm { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cue.sb { background: rgba(46,158,91,.18); }
+  .cue.on .nm { color: #8fd3a8; }
+  #offline, #login { position: fixed; inset: 0; background: rgba(15,16,19,.94); display: none; flex-direction: column;
+    align-items: center; justify-content: center; gap: 14px; padding: 24px; text-align: center; z-index: 10; }
+  #offline.show, #login.show { display: flex; }
+  #offline h2 { color: #ff8a7a; margin: 0; }
+  #login input { font-size: 32px; width: 6em; text-align: center; letter-spacing: .3em; padding: 10px; border-radius: 10px;
+    border: 1px solid var(--border); background: var(--input); color: var(--text); }
+  #login button { font-size: 18px; padding: 12px 28px; border-radius: 10px; border: none; background: var(--accent); color: #fff; }
+  .err { color: #ff8a7a; min-height: 1.2em; }
+  .muted { color: var(--muted); }
+</style>
+</head>
+<body>
+  <header>
+    <span class="dot" id="dot"></span>
+    <span id="show">Escena</span>
+    <span class="badge" id="showMode" data-t="MODE FUNCIÓ"></span>
+  </header>
+
+  <div class="box">
+    <div class="label" data-t="Sona"></div>
+    <div id="current"><span id="curName">—</span><span id="curTime"></span></div>
+  </div>
+
+  <div class="box" id="standby">
+    <button class="nav" id="prev" aria-label="↑">▲</button>
+    <div class="main">
+      <div class="label" data-t="En espera"></div>
+      <div id="sbName">—</div>
+      <div id="sbNotes"></div>
+    </div>
+    <button class="nav" id="next" aria-label="↓">▼</button>
+  </div>
+
+  <button id="go" disabled>GO</button>
+
+  <div class="row">
+    <button id="pause"><span data-t="Pausa"></span></button>
+    <button id="stop" class="hold"><div class="fill"></div><span data-t="Atura-ho tot"></span></button>
+    <button id="panic" class="hold"><div class="fill"></div><span data-t="PÀNIC"></span></button>
+  </div>
+  <div class="hint" data-t="Mantén premut «Atura-ho tot» o «PÀNIC» mig segon. Un segon toc talla de cop."></div>
+
+  <div class="box" id="masterBox">
+    <div class="vol-head"><span class="label" data-t="Volum general"></span><b id="masterVal">0,0 dB</b></div>
+    <div class="vol">
+      <button class="nav" id="volDown" aria-label="−">−</button>
+      <input type="range" id="master" min="-60" max="6" step="0.5" value="0">
+      <button class="nav" id="volUp" aria-label="+">+</button>
+    </div>
+  </div>
+
+  <div id="active"></div>
+
+  <details id="cuesBox">
+    <summary data-t="Cues (toca'n una per posar-la en espera)"></summary>
+    <div id="list"></div>
+  </details>
+
+  <div id="offline">
+    <h2 data-t="Sense connexió amb Escena"></h2>
+    <div class="muted" data-t="Tornant a connectar… Comprova que el mòbil és a la mateixa wifi i que Escena té el control remot activat."></div>
+  </div>
+
+  <div id="login">
+    <h2>Escena</h2>
+    <div data-t="Escriu el PIN que surt a Escena (Eines → Control remot)."></div>
+    <input id="pin" inputmode="numeric" maxlength="8" autocomplete="off">
+    <button id="loginBtn" data-t="Entra"></button>
+    <div class="err" id="loginErr"></div>
+  </div>
+
+<script>
+(() => {
+  const EN = {
+    "MODE FUNCIÓ": "SHOW MODE", "Sona": "Playing", "En espera": "Standby", "Pausa": "Pause", "Reprèn": "Resume",
+    "Atura-ho tot": "Stop all", "PÀNIC": "PANIC",
+    "Mantén premut «Atura-ho tot» o «PÀNIC» mig segon. Un segon toc talla de cop.": "Hold «Stop all» or «PANIC» for half a second. A second press cuts instantly.",
+    "Cues (toca'n una per posar-la en espera)": "Cues (tap one to put it on standby)",
+    "Sense connexió amb Escena": "No connection to Escena",
+    "Tornant a connectar… Comprova que el mòbil és a la mateixa wifi i que Escena té el control remot activat.": "Reconnecting… Check that the phone is on the same Wi-Fi and that remote control is on in Escena.",
+    "Escriu el PIN que surt a Escena (Eines → Control remot).": "Enter the PIN shown in Escena (Tools → Remote control).",
+    "Entra": "Enter", "PIN incorrecte.": "Wrong PIN.", "Massa intents: espera 30 segons.": "Too many attempts: wait 30 seconds.",
+    "Res en espera": "Nothing on standby", "Volum general": "Master volume",
+  };
+  const en = document.documentElement.lang === "en";
+  const t = s => en && EN[s] ? EN[s] : s;
+  document.querySelectorAll("[data-t]").forEach(e => e.textContent = t(e.dataset.t));
+
+  const $ = id => document.getElementById(id);
+  let ws = null, authed = false, retry = 0, cues = [], state = null;
+
+  // PIN: del codi QR (#pin=1234) o el que es va fer servir l'última vegada.
+  const m = location.hash.match(/pin=(\d+)/);
+  if (m) { try { localStorage.setItem("escena-pin", m[1]); } catch {} history.replaceState(null, "", location.pathname); }
+  let pin = ""; try { pin = localStorage.getItem("escena-pin") || ""; } catch {}
+
+  function connect() {
+    ws = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/ws");
+    ws.onopen = () => { retry = 0; if (pin) ws.send(JSON.stringify({ pin })); else showLogin(""); };
+    ws.onmessage = ev => {
+      const msg = JSON.parse(ev.data);
+      if (msg.type === "auth") {
+        authed = msg.ok;
+        if (msg.ok) { $("login").classList.remove("show"); online(true); }
+        else showLogin(msg.locked ? t("Massa intents: espera 30 segons.") : (pin ? t("PIN incorrecte.") : ""));
+      } else if (msg.type === "cues") { cues = msg.cues; renderList(); }
+      else if (msg.type === "state") { state = msg; render(); }
+    };
+    ws.onclose = () => {
+      online(false);
+      authed = false;
+      setTimeout(connect, Math.min(5000, 500 * ++retry));
+    };
+  }
+
+  function online(on) {
+    $("dot").classList.toggle("on", on && authed);
+    $("offline").classList.toggle("show", !on && !$("login").classList.contains("show"));
+    $("go").disabled = !(on && authed);
+  }
+
+  function showLogin(err) {
+    $("offline").classList.remove("show");
+    $("login").classList.add("show");
+    $("loginErr").textContent = err;
+    $("pin").value = "";
+    setTimeout(() => $("pin").focus(), 50);
+  }
+  $("loginBtn").onclick = () => {
+    pin = $("pin").value.trim();
+    try { localStorage.setItem("escena-pin", pin); } catch {}
+    if (ws && ws.readyState === 1) ws.send(JSON.stringify({ pin }));
+  };
+  $("pin").addEventListener("keydown", e => { if (e.key === "Enter") $("loginBtn").click(); });
+
+  function send(cmd, extra) {
+    if (ws && ws.readyState === 1 && authed) { ws.send(JSON.stringify(Object.assign({ cmd }, extra || {}))); return true; }
+    return false;
+  }
+  const buzz = ms => { try { navigator.vibrate && navigator.vibrate(ms); } catch {} };
+
+  $("go").addEventListener("click", () => { if (send("go")) buzz(30); });
+  $("prev").onclick = () => send("standbyMove", { delta: -1 });
+  $("next").onclick = () => send("standbyMove", { delta: 1 });
+  $("pause").onclick = () => send("pauseAll");
+
+  // Atura-ho tot i Pànic: cal mantenir-los premuts mig segon (per no prémer-los sense voler).
+  document.querySelectorAll(".hold").forEach(btn => {
+    let timer = null;
+    const cancel = () => { clearTimeout(timer); timer = null; btn.classList.remove("holding"); };
+    btn.addEventListener("pointerdown", e => {
+      e.preventDefault();
+      btn.classList.add("holding");
+      timer = setTimeout(() => { cancel(); if (send(btn.id === "stop" ? "stopAll" : "panic")) buzz([40, 40, 40]); }, 500);
+    });
+    ["pointerup", "pointerleave", "pointercancel"].forEach(n => btn.addEventListener(n, cancel));
+    btn.addEventListener("contextmenu", e => e.preventDefault());
+  });
+
+  // Volum general: el control llisca sense esperar Escena; mentre es toca, l'estat que arriba no el mou.
+  const master = $("master");
+  let masterTouched = 0, masterTimer = null, masterPending = null;
+  const fmtDb = v => (v > 0 ? "+" : "") + (en ? v.toFixed(1) : v.toFixed(1).replace(".", ",")) + " dB";
+  function showMaster(v) {
+    $("masterVal").textContent = v <= -60 ? (en ? "Silence" : "Silenci") : fmtDb(v);
+    $("masterVal").classList.toggle("hot", v > 0);
+  }
+  function setMaster(v) {
+    v = Math.max(-60, Math.min(6, Math.round(v * 2) / 2));
+    master.value = v;
+    showMaster(v);
+    masterTouched = Date.now();
+    masterPending = v;
+    if (!masterTimer) masterTimer = setTimeout(() => {   // com a molt una ordre cada 80 ms
+      masterTimer = null;
+      if (masterPending !== null) send("master", { value: masterPending });
+      masterPending = null;
+    }, 80);
+  }
+  master.addEventListener("input", () => setMaster(parseFloat(master.value)));
+  $("volDown").onclick = () => setMaster(parseFloat(master.value) - 1);
+  $("volUp").onclick = () => setMaster(parseFloat(master.value) + 1);
+
+  // Espai o Retorn amb un teclat connectat al mòbil també fan GO.
+  document.addEventListener("keydown", e => {
+    if (document.activeElement === $("pin")) return;
+    if (e.key === " " || e.key === "Enter") { e.preventDefault(); $("go").click(); }
+  });
+
+  function render() {
+    const s = state;
+    $("show").textContent = s.show;
+    $("showMode").classList.toggle("show", s.showMode);
+    const cur = s.active.length ? s.active[s.active.length - 1] : null;
+    $("curName").textContent = cur ? cur.name : "—";
+    $("curTime").textContent = cur ? cur.time : "";
+    $("sbName").textContent = s.standby ? s.standby.name : t("Res en espera");
+    $("sbNotes").textContent = s.standby ? s.standby.notes : "";
+    $("pause").firstElementChild.textContent = t(s.paused ? "Reprèn" : "Pausa");
+    if (Date.now() - masterTouched > 800) { master.value = s.master; showMaster(s.master); }
+
+    const box = $("active");
+    box.replaceChildren(...s.active.slice(0, -1).reverse().slice(0, 4).map(a => {
+      const d = document.createElement("div");
+      d.className = "act" + (a.paused ? " paused" : "");
+      d.innerHTML = '<div class="bar"></div><div class="t"><b></b><span></span></div>';
+      d.querySelector(".bar").style.width = a.progress + "%";
+      d.querySelector("b").textContent = a.name;
+      d.querySelector("span").textContent = a.time;
+      return d;
+    }));
+    markList();
+  }
+
+  function renderList() {
+    const list = $("list");
+    list.replaceChildren(...cues.map(c => {
+      const d = document.createElement("div");
+      d.className = "cue";
+      d.dataset.id = c.id;
+      d.innerHTML = '<span class="sw"></span><span class="n"></span><span class="nm"></span>';
+      d.querySelector(".sw").style.background = c.color;
+      d.querySelector(".n").textContent = c.num;
+      const nm = d.querySelector(".nm");
+      nm.textContent = c.name;
+      nm.style.paddingLeft = (c.depth * 14) + "px";
+      d.onclick = () => send("standby", { id: c.id });
+      return d;
+    }));
+    markList();
+  }
+
+  function markList() {
+    if (!state) return;
+    const sb = state.standby ? state.standby.id : null;
+    const on = new Set(state.active.map(a => a.id));
+    document.querySelectorAll(".cue").forEach(d => {
+      const isSb = d.dataset.id === sb;
+      if (isSb && !d.classList.contains("sb") && $("cuesBox").open) d.scrollIntoView({ block: "nearest" });
+      d.classList.toggle("sb", isSb);
+      d.classList.toggle("on", on.has(d.dataset.id));
+    });
+  }
+
+  connect();
+})();
+</script>
+</body>
+</html>
